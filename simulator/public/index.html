@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hearth · Alexa+ Simulator</title>
+<link rel="icon" href="favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="layout">
+  <section class="stage">
+    <div class="brandline">
+      <span class="logo">Hearth</span>
+      <span class="tag">Alexa+ simulator · MCP 2025-11-25</span>
+    </div>
+
+    <div class="device" id="device" data-state="idle">
+      <div class="screen">
+        <!-- Ambient home screen -->
+        <div class="view ambient" id="ambient">
+          <div class="clock" id="clock">--:--</div>
+          <div class="date" id="date"></div>
+          <div class="ambient-cards" id="ambientCards"></div>
+        </div>
+
+        <!-- Conversation view -->
+        <div class="view convo" id="convo" hidden>
+          <div class="utterance" id="utterance"></div>
+          <div class="reply" id="reply"></div>
+          <div class="card-host" id="cardHost"></div>
+        </div>
+
+        <!-- Elicitation overlay (server-initiated question) -->
+        <div class="elicit" id="elicit" hidden>
+          <div class="elicit-panel">
+            <div class="elicit-kicker">Hearth is asking</div>
+            <div class="elicit-msg" id="elicitMsg"></div>
+            <form id="elicitForm"></form>
+          </div>
+        </div>
+      </div>
+      <div class="lightbar" aria-hidden="true"><span></span></div>
+    </div>
+
+    <div class="controls">
+      <div class="who" role="radiogroup" aria-label="Who is speaking">
+        <span class="who-label">Speaking:</span>
+        <label><input type="radio" name="speaker" value="Asha" checked /> Asha <small>(Mom)</small></label>
+        <label><input type="radio" name="speaker" value="Priya" /> Priya <small>(daughter)</small></label>
+        <label><input type="radio" name="speaker" value="Raj" /> Raj <small>(son)</small></label>
+      </div>
+      <form class="ask" id="askForm">
+        <button type="button" class="mic" id="mic" aria-label="Talk to Alexa">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+        </button>
+        <input id="text" autocomplete="off" placeholder="Say “Alexa, did I take my pills?” or type here" />
+        <button class="send" type="submit">Send</button>
+      </form>
+      <div class="chips" id="chips"></div>
+      <label class="tts"><input type="checkbox" id="tts" checked /> Speak replies aloud</label>
+    </div>
+  </section>
+
+  <aside class="trace">
+    <header>
+      <h2>MCP trace</h2>
+      <button id="reset" class="ghost" type="button">New conversation</button>
+    </header>
+    <p class="trace-sub" id="conn">Connecting to Hearth…</p>
+    <ol id="log"></ol>
+  </aside>
+</main>
+<script src="app.js" type="module"></script>
+</body>
+</html>

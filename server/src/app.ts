@@ -28,14 +28,27 @@ export function createApp(store: CareStore, opts: AppOptions = {}): { app: Expre
   const transports = new Map<string, StreamableHTTPServerTransport>();
   const allowed = new Set(opts.allowedOrigins ?? []);
 
+  const originAllowed = (origin: string) =>
+    allowed.has(origin) || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin);
+
   // Spec: servers MUST validate Origin to prevent DNS rebinding; reject with 403.
+  // Allowed browser origins also get CORS headers so web-based MCP clients work.
   const originGuard = (req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
-    if (origin && !allowed.has(origin) && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)) {
-      return jsonRpcError(res, 403, -32000, `Origin ${origin} is not allowed`);
+    if (!origin) return next();
+    if (!originAllowed(origin)) return jsonRpcError(res, 403, -32000, `Origin ${origin} is not allowed`);
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id, Mcp-Protocol-Version, WWW-Authenticate");
+    if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID");
+      res.setHeader("Access-Control-Max-Age", "86400");
+      return res.status(204).end();
     }
     next();
   };
+  app.options("/mcp", originGuard);
   const auth = (req: Request, res: Response, next: NextFunction) => {
     if (opts.token && req.headers.authorization !== `Bearer ${opts.token}`) {
       res.setHeader("WWW-Authenticate", 'Bearer realm="hearth"');
