@@ -1,7 +1,19 @@
 node_modules/
 dist/
-*.db
-*.db-*
-.env
 .DS_Store
 .playwright-mcp/
+
+# Local data (household care records)
+*.db
+*.db-*
+*.sqlite
+
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.npmrc
+.alexa-ai/
