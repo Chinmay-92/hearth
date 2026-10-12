@@ -79,9 +79,9 @@ Yes. MCP and elicitation let a single server serve a voice-only grandparent and 
 
 ## Open Source mini-challenge
 
-- **Contribution URL:** ✏️ https://github.com/<you>/mcp-http-probe (push `packages/mcp-http-probe` as its own public MIT repo; optionally publish to npm)
-- **Project repository URL:** ✏️ https://github.com/<you>/hearth
-- **GitHub username:** ✏️
+- **Contribution URL:** https://github.com/Chinmay-92/mcp-http-probe
+- **Project repository URL:** https://github.com/Chinmay-92/hearth
+- **GitHub username:** Chinmay-92
 - **What it is:** `mcp-http-probe` is a dependency-free CLI and library that black-box tests any MCP server against the Streamable HTTP transport rules of spec 2025-11-25. It runs 23 checks covering Accept negotiation, Origin/DNS-rebinding 403, the initialize result, the session-ID charset, 202 for notifications, ping, -32601, the `MCP-Protocol-Version` 400, session 400/404, tool naming and schemas, GET SSE or 405, and DELETE teardown. Each failure links to the relevant spec section.
 - **How it works:** it speaks raw HTTP with `fetch`, parses JSON or SSE responses, drives a real session through its lifecycle, and finishes by tearing the session down. The exit code works as a CI gate. Its tests run it against a compliant SDK server, an SDK server without Origin validation (correctly flagged), and a deliberately sloppy hand-rolled server (seven distinct violations caught).
 - **Why it matters:** SDK tests verify the SDK, not your deployment. Real servers break in the glue: session maps, auth middleware, proxies, and default security settings. Because it uses only HTTP, the probe works for MCP servers in any language. Its first run found that a server built from the standard TypeScript SDK example skips a MUST-level Origin check.

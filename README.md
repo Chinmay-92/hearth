@@ -7,7 +7,7 @@ Mom talks to the Echo in her kitchen: *"I took my metformin."* *"I slept badly a
 If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. In the middle of the tool call it asks her, *"Should I alert Priya right away?"*, and on a yes it sends Priya a push notification.
 
 > Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**), running on a **real Echo Dot** through the Alexa+ MCP Toolkit, with a web simulator as a fallback
-> Mini-challenge: **Open Source**, with [`mcp-http-probe`](packages/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers
+> Mini-challenge: **Open Source**, with [`mcp-http-probe`](https://github.com/Chinmay-92/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers
 
 ---
 
@@ -60,7 +60,7 @@ Both talk to the same Hearth server and household, so something logged on the Ec
 Requires **Node.js 22.18 or later**. The `.ts` files run directly through Node's built-in type stripping, so there's no build step.
 
 ```bash
-git clone <this repo> hearth && cd hearth
+git clone https://github.com/Chinmay-92/hearth.git && cd hearth
 npm install
 
 # 1. Start the MCP server. On first run it seeds a demo household: Asha (78), with daughter Priya and son Raj.
