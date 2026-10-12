@@ -138,7 +138,7 @@ export function createHearthServer(store: CareStore): McpServer {
       if (concern.level === "urgent") {
         const primary = profile.family[0];
         const answer = await ask(
-          `${profile.recipient} mentioned ${concern.reasons.join(" and ")}. Should I alert ${primary.name} right away?`,
+          `From ${profile.recipient}'s check-in: ${concern.reasons.join("; ")}. Should I alert ${primary.name} right away?`,
           {
             type: "object",
             properties: { alert: { type: "boolean", title: `Alert ${primary.name} now`, default: true } },
