@@ -17,6 +17,10 @@ const { app, close } = createApp(store, {
   allowedOrigins: process.env.HEARTH_ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean),
 });
 
+if (!/^(127\.0\.0\.1|localhost|::1)$/.test(host) && !process.env.HEARTH_TOKEN) {
+  console.warn("WARNING: listening on a non-loopback address without HEARTH_TOKEN. Anyone who can reach this port can read care data.");
+}
+
 const server = app.listen(port, host, () => {
   console.log(`Hearth MCP server listening on http://${host}:${port}/mcp (protocol 2025-11-25, Streamable HTTP)`);
 });
