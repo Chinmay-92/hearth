@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "node --watch src/server.ts",
-    "start": "node src/server.ts"
+    "dev": "node --env-file-if-exists=../.env --watch src/server.ts",
+    "start": "node --env-file-if-exists=../.env src/server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

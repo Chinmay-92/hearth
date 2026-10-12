@@ -1,0 +1,14 @@
+{
+  "name": "Hearth Family Care",
+  "shortDescription": "Shared memory for caring for an aging parent: medications, check-ins, appointments and family alerts.",
+  "fullDescription": "Hearth helps families look after an older relative together. The person being cared for just talks to Alexa: \"I took my metformin\", \"I slept badly and my knee hurts\", \"did I take my pills?\". Hearth keeps track of medications and refills, compares daily check-ins with recent baselines, and flags what the family should know. Family members ask their own Alexa \"how's Mom doing this week?\" for adherence, pain and sleep trends, missed doses and upcoming appointments. Hearth can message the family, coordinate who drives to appointments, and alert a caregiver when a check-in mentions a fall or chest pain. Hearth is self-hosted: each household's data stays on its own server. Hearth is not a medical device; in an emergency, call 911.",
+  "examplePhrases": [
+    "Alexa, did I take my pills this morning?",
+    "Alexa, tell Hearth I slept badly and my knee hurts",
+    "Alexa, how has Mom been doing this week?",
+    "Alexa, ask Hearth who is driving Mom to her appointment"
+  ],
+  "carouselAltText": "Hearth conversation: Mom logs a dose, Priya asks how Mom is doing and hears adherence, pain trend and an appointment that needs a driver.",
+  "category": "HEALTH_AND_FITNESS",
+  "distributionCountries": ["US"]
+}

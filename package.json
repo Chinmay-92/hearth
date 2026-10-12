@@ -1,18 +1,25 @@
 {
   "name": "hearth",
   "private": true,
-  "description": "Hearth — an Alexa+ caregiving co-pilot built as a self-hosted MCP server (spec 2025-11-25, Streamable HTTP).",
+  "description": "Hearth \u2014 an Alexa+ caregiving co-pilot built as a self-hosted MCP server (spec 2025-11-25, Streamable HTTP).",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=22.18" },
-  "workspaces": ["server", "simulator", "packages/mcp-http-probe"],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "workspaces": [
+    "server",
+    "simulator",
+    "packages/mcp-http-probe"
+  ],
   "scripts": {
     "dev:server": "npm run dev -w server",
     "dev:sim": "npm run dev -w simulator",
     "seed": "npm run seed -w server",
     "probe": "npm run build -w mcp-http-probe && node packages/mcp-http-probe/dist/cli.js http://127.0.0.1:8787/mcp",
     "typecheck": "tsc -p server && tsc -p simulator && tsc -p packages/mcp-http-probe --noEmit",
-    "test": "npm test -w server && npm test -w mcp-http-probe"
+    "test": "npm test -w server && npm test -w mcp-http-probe",
+    "alexa:credentials": "npm run alexa:credentials -w server --"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

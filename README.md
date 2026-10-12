@@ -6,7 +6,7 @@ Mom talks to the Echo in her kitchen: *"I took my metformin."* *"I slept badly a
 
 If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. In the middle of the tool call it asks her, *"Should I alert Priya right away?"*, and on a yes it sends Priya a push notification.
 
-> Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**)
+> Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**), running on a **real Echo Dot** through the Alexa+ MCP Toolkit, with a web simulator as a fallback
 > Mini-challenge: **Open Source**, with [`mcp-http-probe`](packages/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers
 
 ---
@@ -32,6 +32,13 @@ Hearth connects the two. It keeps **one shared household state** that any device
 | Audit trail | `notifications/message` logging when alerts go out | |
 
 Push notifications are delivered through [ntfy.sh](https://ntfy.sh) (free, no account; install the app and subscribe to a topic) or any webhook (Slack, Discord, Zapier). With neither configured, alerts go to an outbox in the database.
+
+## Two ways to talk to Hearth
+
+1. **A real Echo Dot or Echo Show via the Alexa+ MCP Toolkit.** Alexa+ is the MCP client. Hearth ships with what the toolkit requires: OAuth 2.1 with `client_credentials` service tokens, account linking with PKCE (a family member approves with a household PIN), RFC 9728 metadata, a bare `401` to trigger linking, tool calls under 500 ms, listing pages and art. Step-by-step guide: **[alexa/README.md](alexa/README.md)**.
+2. **The web Alexa+ simulator** in this repo, for judges without a device and for showing the MCP traffic live.
+
+Both talk to the same Hearth server and household, so something logged on the Echo Dot shows up in the simulator's digest, and the reverse.
 
 ## Architecture
 
@@ -86,6 +93,17 @@ HEARTH_NTFY_TOPIC=hearth-demo-<something-unique> npm run seed
   ```
   Clients then send `Authorization: Bearer <token>`.
 
+### Run it on your Echo Dot
+
+See **[alexa/README.md](alexa/README.md)**. In short:
+
+```bash
+cloudflared tunnel --url http://localhost:8787                  # public HTTPS URL
+npm run alexa:credentials -- https://<tunnel>.trycloudflare.com  # OAuth client + household PIN → .env
+npm run dev:server                                               # Hearth in Alexa+ mode
+# then: alexa-ai new mcp → node alexa/configure-addon.ts … → alexa-ai deploy → configure-account-linking
+```
+
 ### Configuration
 
 | Variable | Default | Purpose |
@@ -98,22 +116,31 @@ HEARTH_NTFY_TOPIC=hearth-demo-<something-unique> npm run seed
 | `HEARTH_DRY_RUN` | unset | `1` = never call external notification services |
 | `HEARTH_MCP_URL` | `http://127.0.0.1:8787/mcp` | simulator → server URL |
 | `HEARTH_MODEL` | `claude-opus-5-5` | simulator's Claude model |
+| `HEARTH_PUBLIC_URL` | unset | public HTTPS base URL (tunnel); enables the Host allow-list and OAuth metadata |
+| `HEARTH_OAUTH_CLIENT_ID` / `_SECRET` | unset | Alexa+ OAuth client; setting the ID turns on Alexa+ mode |
+| `HEARTH_LINK_PIN` | unset | household PIN entered during account linking |
+
+`npm run alexa:credentials` generates the last four into `.env`, which the server and simulator load automatically.
 
 ## Tests
 
 ```bash
-npm test          # server: insights + end-to-end MCP over HTTP (elicitation, sessions, origin); probe: 3 reference servers
+npm test          # 27 tests: MCP over HTTP (elicitation, sessions, origin), the Alexa+ OAuth contract, probe vs. 4 reference servers
 npm run typecheck
 ```
 
-The server tests use the real SDK `Client` over Streamable HTTP. They cover protocol negotiation (`2025-11-25`), persistence across sessions, elicitation accept and decline, the no-elicitation confirmation fallback, the titled-enum driver picker, the MCP App resource, and rejection of foreign Origins and unknown sessions.
+The server tests use the real SDK `Client` over Streamable HTTP. They cover protocol negotiation (`2025-11-25`), persistence across sessions, elicitation accept and decline, the no-elicitation fallbacks (confirmation, `assign_driver`), the titled-enum driver picker, the MCP App resource, and rejection of foreign Origins, Hosts and unknown sessions.
+
+`test/oauth.test.ts` plays the part of Alexa+. It runs metadata discovery, the client-credentials service token (lists tools, gets a 401 on `tools/call`), account linking with PKCE and the PIN, single-use codes, refresh rotation without `resource`, and checks that a linked `tools/call` finishes in under 500 ms.
 
 ## Project layout
 
 ```
 server/src/
   index.ts          entry point (env config, seeding, listen)
-  app.ts            Streamable HTTP transport, sessions, Origin/CORS/auth
+  app.ts            Streamable HTTP transport, sessions, Origin/Host/CORS
+  oauth.ts          OAuth 2.1 server for Alexa+ (service tokens, account linking, PKCE)
+  public-pages.ts   privacy/terms pages and listing art for the add-on
   hearth.ts         MCP tools, resources, prompts, elicitation
   insights.ts       what's due, concern assessment, digest trends
   store.ts          SQLite care store (node:sqlite)
@@ -124,6 +151,7 @@ simulator/
   src/agent.ts      Claude tool-use loop over an MCP client
   src/server.ts     device sessions, SSE turn stream, elicitation bridge
   public/           Echo Show-style UI, MCP Apps host, speech I/O
+alexa/              Echo Dot guide, add-on listing copy, addon.json patcher
 packages/mcp-http-probe/   open-source conformance CLI (MIT)
 docs/               demo script and Devpost submission kit
 ```

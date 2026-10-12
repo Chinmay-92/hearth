@@ -74,7 +74,7 @@ describe("MCP over Streamable HTTP", () => {
     assert.equal(transport.protocolVersion, "2025-11-25");
     assert.equal(client.getServerVersion()?.name, "hearth");
     const tools = (await client.listTools()).tools.map((t) => t.name).sort();
-    assert.deepEqual(tools, ["add_care_note", "family_digest", "log_checkin", "notify_family", "record_dose", "schedule_appointment", "whats_due"]);
+    assert.deepEqual(tools, ["add_care_note", "assign_driver", "family_digest", "log_checkin", "notify_family", "record_dose", "schedule_appointment", "whats_due"]);
     const digest = (await client.listTools()).tools.find((t) => t.name === "family_digest")!;
     assert.equal((digest._meta as { ui: { resourceUri: string } }).ui.resourceUri, "ui://hearth/digest");
     const ui = await client.readResource({ uri: "ui://hearth/digest" });
@@ -130,6 +130,17 @@ describe("MCP over Streamable HTTP", () => {
     });
     const r = await call(client, "schedule_appointment", { title: "Eye exam", when: "2026-10-20T14:00" });
     assert.match(textOf(r), /Raj is driving and has been notified/);
+    await client.close();
+  });
+
+  test("without elicitation, schedule_appointment hands off to assign_driver", async () => {
+    const { client } = await connect();
+    const r = await call(client, "schedule_appointment", { title: "Dental cleaning", when: "2026-10-22T09:00" });
+    const id = (r.structuredContent as { appointment: { id: number } }).appointment.id;
+    assert.match(textOf(r), new RegExp(`call assign_driver with appointment_id ${id}`));
+    const a = await call(client, "assign_driver", { driver: "my daughter", appointment_id: id });
+    assert.match(textOf(a), /Priya is driving to Dental cleaning/);
+    assert.equal(store.notifications(new Date(0))[0].to, "Priya");
     await client.close();
   });
 

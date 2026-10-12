@@ -9,14 +9,20 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { Express, NextFunction, Request, Response } from "express";
 import { createHearthServer, SERVER_INFO } from "./hearth.ts";
+import { mcpAuth, type OAuthServer } from "./oauth.ts";
+import { mountPublicPages } from "./public-pages.ts";
 import type { CareStore } from "./store.ts";
 
 export type AppOptions = {
   host?: string;
   /** Browser origins allowed to call /mcp. Requests with no Origin header (CLI, server-to-server) are allowed. */
   allowedOrigins?: string[];
-  /** If set, every /mcp request must carry `Authorization: Bearer <token>`. */
+  /** If set, `Authorization: Bearer <token>` grants full access (simulator, Inspector, Claude). */
   token?: string;
+  /** OAuth 2.1 server for Alexa+ (service tokens + account linking). */
+  oauth?: OAuthServer;
+  /** Public hostnames (e.g. a tunnel) accepted in the Host header in addition to localhost. */
+  publicHosts?: string[];
 };
 
 const jsonRpcError = (res: Response, status: number, code: number, message: string) =>
@@ -24,7 +30,11 @@ const jsonRpcError = (res: Response, status: number, code: number, message: stri
 
 export function createApp(store: CareStore, opts: AppOptions = {}): { app: Express; close: () => Promise<void> } {
   const host = opts.host ?? "127.0.0.1";
-  const app = createMcpExpressApp({ host });
+  // DNS-rebinding protection on the Host header: localhost plus any configured public hostname.
+  const app = createMcpExpressApp({
+    host,
+    allowedHosts: opts.publicHosts?.length ? ["127.0.0.1", "localhost", "[::1]", ...opts.publicHosts] : undefined,
+  });
   const transports = new Map<string, StreamableHTTPServerTransport>();
   const allowed = new Set(opts.allowedOrigins ?? []);
 
@@ -49,13 +59,9 @@ export function createApp(store: CareStore, opts: AppOptions = {}): { app: Expre
     next();
   };
   app.options("/mcp", originGuard);
-  const auth = (req: Request, res: Response, next: NextFunction) => {
-    if (opts.token && req.headers.authorization !== `Bearer ${opts.token}`) {
-      res.setHeader("WWW-Authenticate", 'Bearer realm="hearth"');
-      return jsonRpcError(res, 401, -32000, "Unauthorized");
-    }
-    next();
-  };
+  const auth = mcpAuth({ oauth: opts.oauth, staticToken: opts.token });
+  opts.oauth?.mount(app);
+  mountPublicPages(app);
 
   app.get("/healthz", (_req, res) => {
     res.json({ ok: true, server: SERVER_INFO, sessions: transports.size, hasProfile: Boolean(store.getProfile()) });

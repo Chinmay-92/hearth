@@ -5,10 +5,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "node --watch src/index.ts",
-    "start": "node src/index.ts",
-    "seed": "node src/seed-cli.ts",
-    "test": "node --test test/*.test.ts"
+    "dev": "node --env-file-if-exists=../.env --watch src/index.ts",
+    "start": "node --env-file-if-exists=../.env src/index.ts",
+    "seed": "node --env-file-if-exists=../.env src/seed-cli.ts",
+    "test": "node --test test/*.test.ts",
+    "alexa:credentials": "node src/alexa-credentials.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.1",

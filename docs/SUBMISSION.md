@@ -23,6 +23,8 @@ It acts as an agent, not just a Q&A bot:
 - **State across sessions and people.** Every device and family member shares one household store, so what Mom logs at 8am is in her daughter's 9pm digest.
 - **Confirmation fallback.** Clients without elicitation get a read-back-and-confirm flow, so nothing is ever sent without a yes.
 
+**It runs on a real Echo Dot.** Hearth is deployed as an Alexa+ MCP add-on through the Alexa+ MCP Toolkit. It implements what the toolkit requires: OAuth 2.1 service tokens via `client_credentials`, account linking with PKCE where a family member approves in the Alexa app with a household PIN, RFC 9728 Protected Resource Metadata, a bare 401 to trigger linking, and tool round trips under 500 ms.
+
 The repo also includes a **simulated Alexa+ Echo Show**: voice in and out, an ambient home screen, an MCP Apps host, elicitation answered by tap or by voice, and a live MCP trace. Its agent loop is Claude calling Hearth over a real MCP client session.
 
 ## How we built it
@@ -32,7 +34,8 @@ The repo also includes a **simulated Alexa+ Echo Show**: voice in and out, an am
 - MCP features used: tools with `structuredContent` and annotations, form-mode elicitation (boolean, string and titled-enum `oneOf` fields), resources, a resource template with completion, prompts, logging notifications, and an MCP App (`ui://hearth/digest`, `text/html;profile=mcp-app`, `_meta.ui.resourceUri`).
 - Notifications go through ntfy.sh push or any webhook.
 - The simulator is Express plus vanilla JS: the Web Speech API, speechSynthesis, an MCP Apps postMessage host, and Claude (`claude-opus-5-5`, adaptive thinking, low effort) through the Anthropic SDK.
-- 16 automated tests: end-to-end MCP over HTTP with the SDK client, including elicitation accept and decline, plus a conformance probe that runs against three reference servers.
+- A built-in OAuth 2.1 authorization server (`server/src/oauth.ts`) shaped to the Alexa+ MCP Toolkit: service and user scopes, PKCE S256, single-use codes, rotating refresh tokens, PIN-gated consent with lockout, and Host-header allow-listing for the tunnel.
+- 27 automated tests, including an Alexa+-shaped OAuth contract test and a latency budget check. Also: end-to-end MCP over HTTP with the SDK client, including elicitation accept and decline, plus a conformance probe that runs against three reference servers.
 
 ## Challenges
 
@@ -48,6 +51,7 @@ The repo also includes a **simulated Alexa+ Echo Show**: voice in and out, an am
 - *MCP Apps extension (`io.modelcontextprotocol/ui`)*: the family digest card.
 - *MCP Inspector*: manual testing. ✏️ (only if you used it)
 - *Anthropic Claude API*: the agent loop in the simulated Alexa+ experience.
+- *Alexa+ MCP Toolkit and Alexa AI CLI (`@alexa-ai/cli`)*: deploying Hearth as an Alexa+ add-on with account linking, tested on an Echo Dot.
 - *ntfy.sh*: push notifications to family phones.
 
 **What worked well?**
@@ -60,7 +64,10 @@ The repo also includes a **simulated Alexa+ Echo Show**: voice in and out, an am
 - **CORS:** nothing in the SDK or docs covers browser-based MCP clients. You have to know to expose `Mcp-Session-Id` and allow the `Mcp-Protocol-Version` and `Last-Event-ID` headers.
 - **MCP Apps spec:** the handshake method is written as `initialize` in the transport example but `ui/initialize` in the lifecycle section. Also, the flat `ui/resourceUri` key is deprecated in favour of `_meta.ui.resourceUri`, but some hosts still read only the flat key, so we send both.
 - **Elicitation discoverability:** it's hard to know which Alexa+ surfaces support form elicitation and MCP Apps today. A capability matrix would help, so builders know whether a fallback such as our `confirmed` flag is needed.
-- **Alexa+ onboarding:** ✏️ describe your experience connecting a self-hosted MCP server to Alexa+ (tunnel, auth, account linking).
+- **Alexa+ MCP Toolkit docs vs. the MCP spec:** the toolkit requires a 401 *without* `WWW-Authenticate`, but MCP 2025-11-25 authorization says servers MUST send it for discovery. A server that serves both Alexa+ and spec-following clients has to choose. A documented flag, or Alexa simply ignoring the header, would avoid that.
+- **Toolkit docs inconsistencies we hit:** the client-lifecycle example shows Alexa+ initializing with protocol `2025-03-26`, while the hackathon asks for `2025-11-25`. The token endpoint is described as accepting credentials in "the authorization header or POST body" but the table says HTTP Basic only. The runtime flow says `mcp:resource` where everything else says `mcp:resources`. The PRM path is just "the well-known URI".
+- **Missing capability matrix:** there's no list of which MCP client features Alexa+ declares (elicitation, MCP Apps on screenless devices, logging) or the per-call timeout. We designed fallbacks for each: a `confirmed` flag, `assign_driver`, and voice-first text.
+- **Setup friction:** installing the Alexa AI CLI requires AWS profiles, Git for CodeCommit and a CodeArtifact npm registry whose token expires every 12 hours. A public npm package would remove most of the onboarding time. ✏️ add your own experience deploying and linking.
 
 **How was onboarding (zero to hello world)?**
 Fast for MCP: an SDK server over Streamable HTTP was answering `tools/list` in under 15 minutes. ✏️ Add anything specific to Alexa+.

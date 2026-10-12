@@ -40,16 +40,22 @@ export function createHearthServer(store: CareStore): McpServer {
     return server.server.elicitInput({ mode: "form", message, requestedSchema });
   }
 
-  async function sendAlert(member: FamilyMember, urgency: Notification["urgency"], message: string, from: string) {
+  /**
+   * Record an alert and deliver it in the background. Alexa+ expects tool calls
+   * to return in under 500 ms, so we never wait on the push service.
+   */
+  function sendAlert(member: FamilyMember, urgency: Notification["urgency"], message: string, from: string) {
     const title = urgency === "urgent" ? `Urgent from ${store.requireProfile().household}` : `Hearth update from ${from}`;
-    const d = await deliver(member, urgency, title, message);
-    store.addNotification({ to: member.name, urgency, message, delivery: d.ok ? d.channel : `${d.channel} failed: ${d.detail}` });
-    await server.sendLoggingMessage({
-      level: urgency === "urgent" ? "warning" : "info",
-      logger: "hearth.notify",
-      data: { to: member.name, urgency, channel: d.channel, ok: d.ok },
-    });
-    return d;
+    const n = store.addNotification({ to: member.name, urgency, message, delivery: member.notify ? "sending" : "outbox" });
+    void server
+      .sendLoggingMessage({ level: urgency === "urgent" ? "warning" : "info", logger: "hearth.notify", data: { to: member.name, urgency } })
+      .catch(() => {});
+    if (member.notify) {
+      void deliver(member, urgency, title, message).then((d) =>
+        store.setNotificationDelivery(n.id, d.ok ? d.channel : `${d.channel} failed: ${d.detail}`),
+      );
+    }
+    return n;
   }
 
   // ---------------------------------------------------------------- tools
@@ -146,9 +152,9 @@ export function createHearthServer(store: CareStore): McpServer {
           },
         );
         if (answer?.action === "accept" && answer.content?.alert) {
-          const d = await sendAlert(primary, "urgent", `${profile.recipient} reported: ${[entry.symptoms, entry.note].filter(Boolean).join(". ") || concern.reasons.join(", ")}. (via Hearth check-in)`, profile.recipient);
+          sendAlert(primary, "urgent", `${profile.recipient} reported: ${[entry.symptoms, entry.note].filter(Boolean).join(". ") || concern.reasons.join(", ")}. (via Hearth check-in)`, profile.recipient);
           alerted = primary.name;
-          msg += d.ok ? ` ${primary.name} has been alerted.` : ` I tried to alert ${primary.name} but delivery failed; it is saved in the outbox.`;
+          msg += ` ${primary.name} has been alerted.`;
         } else if (answer) {
           msg += ` They chose not to alert anyone right now.`;
         }
@@ -165,7 +171,10 @@ export function createHearthServer(store: CareStore): McpServer {
         "A summary for family members of how the care recipient has been doing: medication adherence, pain/mood/sleep trends, flags worth attention, upcoming appointments, notes and alerts. On screen devices this renders as an interactive card.",
       inputSchema: { days: z.number().int().min(3).max(30).default(7) },
       annotations: { readOnlyHint: true, openWorldHint: false },
-      _meta: { ui: { resourceUri: DIGEST_UI_URI }, "ui/resourceUri": DIGEST_UI_URI },
+      _meta: {
+        ui: { resourceUri: DIGEST_UI_URI, invoking: "Pulling together the family digest…", invoked: "Here's how things have been going" },
+        "ui/resourceUri": DIGEST_UI_URI,
+      },
     },
     async ({ days }): Promise<CallToolResult> => {
       const d = familyDigest(store, days);
@@ -173,7 +182,8 @@ export function createHearthServer(store: CareStore): McpServer {
         `${d.recipient}'s last ${d.periodDays} days: medication adherence ${d.adherencePercent ?? "unknown"}%.`,
         d.flags.length ? `Worth attention: ${d.flags.join(" ")}` : "Nothing unusual.",
       ];
-      if (d.upcomingAppointments[0]) lines.push(`Next: ${d.upcomingAppointments[0].title}, ${speakDay(d.upcomingAppointments[0].at)}.`);
+      const next = d.upcomingAppointments[0];
+      if (next) lines.push(`Next: ${next.title}, ${speakDay(next.at)}${next.driver ? `, ${next.driver} driving` : " (appointment_id " + next.id + ", needs a driver)"}.`);
       return { content: [text(lines.join(" "))], structuredContent: d };
     },
   );
@@ -220,13 +230,8 @@ export function createHearthServer(store: CareStore): McpServer {
           structuredContent: { sent: false, needsConfirmation: true },
         };
       }
-      const results = [];
-      for (const r of recipients) results.push({ to: r.name, ...(await sendAlert(r, urgency, finalMessage, sender)) });
-      const failed = results.filter((r) => !r.ok);
-      return {
-        content: [text(failed.length ? `Sent, but delivery to ${failed.map((f) => f.to).join(", ")} failed. It's saved in the outbox.` : `Sent to ${names}.`)],
-        structuredContent: { sent: true, results },
-      };
+      const results = recipients.map((r) => ({ to: r.name, notificationId: sendAlert(r, urgency, finalMessage, sender).id }));
+      return { content: [text(`Sent to ${names}.`)], structuredContent: { sent: true, results } };
     },
   );
 
@@ -264,12 +269,41 @@ export function createHearthServer(store: CareStore): McpServer {
       const appt = store.addAppointment({ at: at.toISOString(), title, withWhom: with_whom, location, driver: chosen?.name ?? null });
       let msg = `Added ${title} on ${speakDay(appt.at)} at ${speakTime(appt.at)}.`;
       if (chosen) {
-        await sendAlert(chosen, "soon", `You're driving ${profile.recipient} to ${title}${location ? ` at ${location}` : ""} on ${speakDay(appt.at)} at ${speakTime(appt.at)}.`, profile.recipient);
+        sendAlert(chosen, "soon", `You're driving ${profile.recipient} to ${title}${location ? ` at ${location}` : ""} on ${speakDay(appt.at)} at ${speakTime(appt.at)}.`, profile.recipient);
         msg += ` ${chosen.name} is driving and has been notified.`;
       } else if (needs_ride) {
-        msg += ` No driver yet; I'll flag it in the family digest.`;
+        const options = profile.family.map((f) => `${f.name} (${f.relation})`).join(" or ");
+        msg += ` It still needs a driver. Ask whether ${options} can drive, then call assign_driver with appointment_id ${appt.id}.`;
       }
       return { content: [text(msg)], structuredContent: { appointment: appt } };
+    },
+  );
+
+  server.registerTool(
+    "assign_driver",
+    {
+      title: "Assign a driver",
+      description:
+        "Set which family member is driving to an upcoming appointment and notify them. Use after schedule_appointment says a driver is needed, or when someone says 'I'll take Mom to her appointment'.",
+      inputSchema: {
+        driver: z.string().describe("Family member name or relation, e.g. 'Raj' or 'my son'."),
+        appointment_id: z.number().int().optional().describe("From schedule_appointment or family_digest. If omitted, the next appointment without a driver."),
+      },
+      annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async ({ driver, appointment_id }): Promise<CallToolResult> => {
+      const profile = store.requireProfile();
+      const member = store.findFamily(driver.replace(/^my\s+/i, ""));
+      if (!member) return { isError: true, content: [text(`I don't know "${driver}". Family on file: ${profile.family.map((f) => f.name).join(", ")}.`)] };
+      const upcoming = store.appointments(store.now(), new Date(store.now().getTime() + 60 * 86_400_000));
+      const appt = appointment_id != null ? upcoming.find((a) => a.id === appointment_id) : upcoming.find((a) => !a.driver);
+      if (!appt) return { isError: true, content: [text("I couldn't find an upcoming appointment that needs a driver.")] };
+      store.setAppointmentDriver(appt.id, member.name);
+      sendAlert(member, "soon", `You're driving ${profile.recipient} to ${appt.title}${appt.location ? ` at ${appt.location}` : ""} on ${speakDay(appt.at)} at ${speakTime(appt.at)}.`, profile.recipient);
+      return {
+        content: [text(`${member.name} is driving to ${appt.title} on ${speakDay(appt.at)} and has been notified.`)],
+        structuredContent: { appointment: { ...appt, driver: member.name } },
+      };
     },
   );
 

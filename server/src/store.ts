@@ -277,6 +277,10 @@ export class CareStore {
     return { ...a, id: Number(r.lastInsertRowid) };
   }
 
+  setAppointmentDriver(id: number, driver: string) {
+    this.db.prepare("UPDATE appointments SET driver = ? WHERE id = ?").run(driver, id);
+  }
+
   appointments(from: Date, to: Date): Appointment[] {
     return (
       this.db
@@ -298,6 +302,10 @@ export class CareStore {
       .prepare("INSERT INTO notifications (at, to_whom, urgency, message, delivery) VALUES (?, ?, ?, ?, ?)")
       .run(at, n.to, n.urgency, n.message, n.delivery);
     return { ...n, at, id: Number(r.lastInsertRowid) };
+  }
+
+  setNotificationDelivery(id: number, delivery: string) {
+    this.db.prepare("UPDATE notifications SET delivery = ? WHERE id = ?").run(delivery, id);
   }
 
   notifications(since: Date): Notification[] {
