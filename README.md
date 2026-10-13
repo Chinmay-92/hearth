@@ -7,7 +7,9 @@ Mom talks to the Echo in her kitchen: *"I took my metformin."* *"I slept badly a
 If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. In the middle of the tool call it asks her, *"Should I alert Priya right away?"*, and on a yes it sends Priya a push notification.
 
 > Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**), running on a **real Echo Dot** through the Alexa+ MCP Toolkit, with a web simulator as a fallback
-> Mini-challenge: **Open Source**, with [`mcp-http-probe`](https://github.com/Chinmay-92/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers
+> Mini-challenge: **Open Source**, with [`mcp-http-probe`](https://github.com/Chinmay-92/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers (on [npm](https://www.npmjs.com/package/mcp-http-probe) and the [GitHub Marketplace](https://github.com/marketplace/actions/mcp-http-probe))
+
+**Website:** ✏️ `<vercel URL>` · **Demo video (under 3 min):** ✏️ `<YouTube URL>`
 
 ---
 
@@ -53,7 +55,12 @@ Both talk to the same Hearth server and household, so something logged on the Ec
 
 - **`server/`** is the Hearth MCP server. It uses the official `@modelcontextprotocol/sdk` 1.32.1, whose `LATEST_PROTOCOL_VERSION` is `2025-11-25`, over Streamable HTTP with session IDs. On top of that it adds GET SSE streams, DELETE session teardown, Origin validation (403), CORS for browser clients, and optional bearer auth. Each connection gets its own `McpServer`, so elicitation reaches the right device. Every connection shares one `CareStore`.
 - **`simulator/`** is the alternate "simulated Alexa+" path the rules allow. It's a web Echo Show with speech in (Web Speech API), speech out (speechSynthesis), and an ambient home screen. It also hosts MCP Apps (the `ui/initialize` handshake → `tool-input` / `tool-result` → `size-changed`) and answers elicitation by tap or by voice ("yes" / "Raj"). The agent loop is Claude (`claude-opus-5-5`, adaptive thinking, low effort for voice latency) calling Hearth's tools over a real MCP client session. A live **MCP trace** panel shows every `tools/call`, result, card and `elicitation/create`.
-- **`packages/mcp-http-probe/`** is the open-source contribution: a dependency-free conformance CLI for Streamable HTTP MCP servers. Hearth passes all 23 checks.
+- **`packages/mcp-http-probe/`** is the open-source contribution: a dependency-free conformance CLI for Streamable HTTP MCP servers. Hearth passes all 23 checks. It's published on [npm](https://www.npmjs.com/package/mcp-http-probe) (`npx mcp-http-probe <url>`) and as a GitHub Action on the [Marketplace](https://github.com/marketplace/actions/mcp-http-probe), so any MCP server can gate CI on it:
+  ```yaml
+  - uses: Chinmay-92/mcp-http-probe@v1
+    with:
+      url: http://127.0.0.1:8787/mcp
+  ```
 
 ## Quick start
 
