@@ -5,7 +5,7 @@
 // speech) is emitted as events.
 import Anthropic from "@anthropic-ai/sdk";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { CallToolResultSchema, type Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
+import { type CallToolResult, CallToolResultSchema, type Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
 
 export type AgentEvent =
   | { type: "tool_call"; name: string; args: unknown }
@@ -105,29 +105,42 @@ export class AlexaSimulator {
   }
 
   private async runTool(tu: Anthropic.Beta.BetaToolUseBlock, emit: (e: AgentEvent) => void): Promise<Anthropic.Beta.BetaToolResultBlockParam> {
-    emit({ type: "tool_call", name: tu.name, args: tu.input });
-    try {
-      const result = await this.mcp.request(
-        { method: "tools/call", params: { name: tu.name, arguments: tu.input as Record<string, unknown> } },
-        CallToolResultSchema,
-        { timeout: 300_000 }, // elicitation waits on a human
-      );
-      const textOut = result.content.map((c) => (c.type === "text" ? c.text : `[${c.type}]`)).join("\n");
-      emit({ type: "tool_result", name: tu.name, text: textOut, isError: Boolean(result.isError) });
+    const { text, isError } = await runMcpTool(this.mcp, this.session?.mcpTools, tu.name, tu.input as Record<string, unknown>, emit);
+    return { type: "tool_result", tool_use_id: tu.id, content: text || "(no output)", is_error: isError };
+  }
+}
 
-      // MCP Apps: if the tool declares a UI resource, fetch it and hand it to the screen.
-      const meta = this.session?.mcpTools.get(tu.name)?._meta as { ui?: { resourceUri?: string } } | undefined;
-      const uri = meta?.ui?.resourceUri;
-      if (uri && !result.isError) {
-        const res = await this.mcp.readResource({ uri });
-        const html = res.contents.find((c) => c.mimeType === UI_MIME && "text" in c);
-        if (html && "text" in html) emit({ type: "ui", toolName: tu.name, html: html.text, toolInput: tu.input, toolResult: result });
-      }
-      return { type: "tool_result", tool_use_id: tu.id, content: textOut || "(no output)", is_error: Boolean(result.isError) };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      emit({ type: "tool_result", name: tu.name, text: message, isError: true });
-      return { type: "tool_result", tool_use_id: tu.id, content: `Tool failed: ${message}`, is_error: true };
+// Calls one Hearth tool over MCP and emits the trace events the screen shows.
+// If the tool declares an MCP App (`_meta.ui.resourceUri`), its HTML is fetched
+// and handed to the screen. Shared by the Claude agent and the scripted playback.
+export async function runMcpTool(
+  mcp: Client,
+  mcpTools: Map<string, McpTool> | undefined,
+  name: string,
+  args: Record<string, unknown>,
+  emit: (e: AgentEvent) => void,
+): Promise<{ text: string; isError: boolean; result?: CallToolResult }> {
+  emit({ type: "tool_call", name, args });
+  try {
+    const result = await mcp.request(
+      { method: "tools/call", params: { name, arguments: args } },
+      CallToolResultSchema,
+      { timeout: 300_000 }, // elicitation waits on a human
+    );
+    const textOut = result.content.map((c) => (c.type === "text" ? c.text : `[${c.type}]`)).join("\n");
+    emit({ type: "tool_result", name, text: textOut, isError: Boolean(result.isError) });
+
+    const meta = mcpTools?.get(name)?._meta as { ui?: { resourceUri?: string } } | undefined;
+    const uri = meta?.ui?.resourceUri;
+    if (uri && !result.isError) {
+      const res = await mcp.readResource({ uri });
+      const html = res.contents.find((c) => c.mimeType === UI_MIME && "text" in c);
+      if (html && "text" in html) emit({ type: "ui", toolName: name, html: html.text, toolInput: args, toolResult: result });
     }
+    return { text: textOut, isError: Boolean(result.isError), result };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    emit({ type: "tool_result", name, text: message, isError: true });
+    return { text: `Tool failed: ${message}`, isError: true };
   }
 }

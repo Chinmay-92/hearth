@@ -76,6 +76,8 @@ npm run dev:server          # → http://127.0.0.1:8787/mcp
 # 2. In a second terminal, start the Alexa+ simulator
 export ANTHROPIC_API_KEY=sk-ant-...      # used only by the simulator's agent loop
 npm run dev:sim             # → open http://127.0.0.1:5173 in Chrome or Edge (for voice input)
+# No API key? Run the simulator in scripted playback mode instead:
+#   HEARTH_PLAYBACK=1 npm run dev:sim
 
 # 3. Optional: verify spec conformance
 npm run probe
@@ -123,6 +125,8 @@ npm run dev:server                                               # Hearth in Ale
 | `HEARTH_DRY_RUN` | unset | `1` = never call external notification services |
 | `HEARTH_MCP_URL` | `http://127.0.0.1:8787/mcp` | simulator → server URL |
 | `HEARTH_MODEL` | `claude-opus-5-5` | simulator's Claude model |
+| `HEARTH_PLAYBACK` | unset | `1` = simulator replays scripted demo lines through the real MCP server (no API key needed; spoken replies are pre-written, tool calls and elicitation are live) |
+| `HEARTH_DEMO_TIME` | unset | e.g. `09:12` starts Hearth's clock at that time today, so the morning doses show as due whatever the real time is |
 | `HEARTH_PUBLIC_URL` | unset | public HTTPS base URL (tunnel); enables the Host allow-list and OAuth metadata |
 | `HEARTH_OAUTH_CLIENT_ID` / `_SECRET` | unset | Alexa+ OAuth client; setting the ID turns on Alexa+ mode |
 | `HEARTH_LINK_PIN` | unset | household PIN entered during account linking |

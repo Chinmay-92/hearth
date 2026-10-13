@@ -5,7 +5,11 @@ import { CareStore } from "./store.ts";
 
 const port = Number(process.env.PORT ?? 8787);
 const host = process.env.HOST ?? "127.0.0.1";
-const store = new CareStore(process.env.HEARTH_DB ?? "hearth.db");
+// HEARTH_DEMO_TIME=09:10 starts Hearth's clock at that time today (it then runs normally),
+// so recordings show the morning doses as overdue whatever the real time is.
+const demoTime = process.env.HEARTH_DEMO_TIME?.match(/^(\d{1,2}):(\d{2})$/);
+const clockOffset = demoTime ? new Date().setHours(Number(demoTime[1]), Number(demoTime[2]), 0, 0) - Date.now() : 0;
+const store = new CareStore(process.env.HEARTH_DB ?? "hearth.db", () => new Date(Date.now() + clockOffset));
 
 if (!store.getProfile()) {
   seedDemo(store, { notifyTopic: process.env.HEARTH_NTFY_TOPIC });

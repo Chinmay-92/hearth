@@ -11,13 +11,16 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { CallToolResultSchema, ElicitRequestSchema, type ElicitResult } from "@modelcontextprotocol/sdk/types.js";
 import express, { type Response } from "express";
 import { AlexaSimulator } from "./agent.ts";
+import { PlaybackSimulator } from "./playback.ts";
 
 const HEARTH_URL = process.env.HEARTH_MCP_URL ?? "http://127.0.0.1:8787/mcp";
 const PORT = Number(process.env.PORT ?? 5173);
+// HEARTH_PLAYBACK=1 swaps the Claude agent loop for scripted demo lines (no API key needed).
+const PLAYBACK = process.env.HEARTH_PLAYBACK === "1";
 
 type Device = {
   client: Client;
-  sim: AlexaSimulator;
+  sim: AlexaSimulator | PlaybackSimulator;
   stream: Response | null; // SSE stream of the turn in flight
   elicits: Map<string, (r: ElicitResult) => void>;
 };
@@ -34,7 +37,7 @@ async function createDevice(): Promise<string> {
       },
     },
   );
-  const device: Device = { client, sim: new AlexaSimulator(client), stream: null, elicits: new Map() };
+  const device: Device = { client, sim: PLAYBACK ? new PlaybackSimulator(client) : new AlexaSimulator(client), stream: null, elicits: new Map() };
 
   // Server-initiated elicitation: forward to the screen, wait for a tap or a spoken yes/no.
   client.setRequestHandler(ElicitRequestSchema, (req) => {
@@ -64,7 +67,7 @@ app.use(express.static(fileURLToPath(new URL("../public", import.meta.url))));
 
 app.post("/api/session", async (_req, res) => {
   try {
-    res.json({ id: await createDevice(), hearth: HEARTH_URL });
+    res.json({ id: await createDevice(), hearth: HEARTH_URL, mode: PLAYBACK ? "playback" : "claude" });
   } catch (err) {
     res.status(502).json({ error: `Could not reach the Hearth MCP server at ${HEARTH_URL}: ${err}` });
   }
@@ -117,5 +120,6 @@ app.get("/api/ambient", async (req, res) => {
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`Alexa+ simulator on http://127.0.0.1:${PORT}  (Hearth MCP: ${HEARTH_URL})`);
-  if (!process.env.ANTHROPIC_API_KEY) console.log("Note: ANTHROPIC_API_KEY is not set; the SDK will fall back to an `ant auth login` profile if present.");
+  if (PLAYBACK) console.log("Scripted playback mode: demo lines call the real Hearth tools; no API key needed.");
+  else if (!process.env.ANTHROPIC_API_KEY) console.log("Note: ANTHROPIC_API_KEY is not set; the SDK will fall back to an `ant auth login` profile if present.");
 });

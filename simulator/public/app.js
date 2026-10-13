@@ -13,7 +13,7 @@ async function connect() {
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
     state.id = j.id;
-    $("conn").textContent = `connected · ${j.hearth}`;
+    $("conn").textContent = `connected · ${j.hearth}${j.mode === "playback" ? " · scripted playback (no LLM)" : ""}`;
     refreshAmbient();
   } catch (err) {
     $("conn").textContent = `Not connected: ${err.message}. Start the Hearth server (npm run dev:server) and reload.`;
@@ -325,6 +325,7 @@ const DEMO = [
   ["Asha", "I tripped on the rug and I'm a bit dizzy"],
   ["Priya", "How has Mom been doing this week?"],
   ["Priya", "Mom's knee appointment needs a driver"],
+  ["Priya", "Book Mom's eye exam next Tuesday at 2, she'll need a ride"],
   ["Asha", "Tell Raj thank you for the groceries"],
 ];
 $("chips").innerHTML = DEMO.map(([who, t], i) => `<button type="button" data-i="${i}" title="as ${who}">${esc(t)}</button>`).join("");
