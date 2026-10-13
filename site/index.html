@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hearth: an Alexa+ caregiving co-pilot</title>
+<meta name="description" content="Hearth is a self-hosted MCP server that turns Alexa+ into a shared memory and early-warning system for families caring for an aging parent." />
+<meta name="theme-color" content="#f4efe8" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#171310" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+<!-- Social cards need absolute URLs: once deployed, replace "assets/og.png" below with https://<your-domain>/assets/og.png -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Hearth: an Alexa+ caregiving co-pilot" />
+<meta property="og:description" content="One shared memory for an aging parent and the family looking after her. A self-hosted MCP server for Alexa+." />
+<meta property="og:image" content="assets/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Hearth: one shared memory for an aging parent and the family looking after her." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Hearth: an Alexa+ caregiving co-pilot" />
+<meta name="twitter:description" content="One shared memory for an aging parent and the family looking after her. A self-hosted MCP server for Alexa+." />
+<meta name="twitter:image" content="assets/og.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <a class="wordmark" href="#top" aria-label="Hearth home">
+    <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="var(--ember)"/><circle cx="16" cy="16" r="14" fill="none" stroke="var(--ember)" stroke-opacity=".3" stroke-width="3"/></svg>
+    Hearth
+  </a>
+  <nav aria-label="Sections">
+    <a href="#story">How it works</a>
+    <a href="#demo">Demo</a>
+    <a href="#probe">Open source</a>
+    <a href="https://github.com/Chinmay-92/hearth">GitHub</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- Hero -->
+<section class="hero" id="top">
+  <div class="hero-copy">
+    <h1>Hearth</h1>
+    <p class="lede">An Alexa+ caregiving co-pilot. One shared memory for an aging parent and the family looking after her.</p>
+    <p class="sub">Mom talks to the speaker in her kitchen. Her daughter, three states away, asks her own Alexa how Mom is doing. Hearth is the self-hosted MCP server in between.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#demo">Watch the demo</a>
+      <a class="btn" href="https://github.com/Chinmay-92/hearth">View on GitHub</a>
+      <a class="btn quiet" href="#probe">mcp-http-probe</a>
+    </div>
+  </div>
+
+  <div class="hero-device" aria-label="Animated example conversation with Alexa+ and Hearth" role="img">
+    <div class="bubbles" aria-hidden="true">
+      <p class="bubble you" data-i="0">Alexa, did I take my pills this morning?</p>
+      <p class="bubble alexa" data-i="1">Not yet. Your lisinopril and metformin were due at 8.</p>
+      <p class="bubble you" data-i="2">I just took them both.</p>
+      <p class="bubble alexa" data-i="3">Logged. Heads up: metformin is running low.</p>
+    </div>
+    <svg class="speaker" viewBox="0 0 320 210" aria-hidden="true">
+      <defs>
+        <linearGradient id="body" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="var(--device-top)"/>
+          <stop offset="1" stop-color="var(--device-bottom)"/>
+        </linearGradient>
+        <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#3fd0ff" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#3fd0ff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse class="ring-glow" cx="160" cy="168" rx="150" ry="34" fill="url(#glow)"/>
+      <path d="M30 92 v54 c0 26 58 44 130 44 s130 -18 130 -44 v-54" fill="url(#body)"/>
+      <ellipse cx="160" cy="92" rx="130" ry="44" fill="var(--device-cap)"/>
+      <ellipse cx="160" cy="92" rx="118" ry="38" fill="none" stroke="var(--device-mesh)" stroke-width="1" stroke-dasharray="2 5"/>
+      <ellipse cx="160" cy="92" rx="100" ry="31" fill="none" stroke="var(--device-mesh)" stroke-width="1" stroke-dasharray="2 5"/>
+      <path class="ring" d="M30 146 c0 26 58 44 130 44 s130 -18 130 -44" fill="none" stroke="#3fd0ff" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+  </div>
+</section>
+
+<!-- Problem -->
+<section class="problem band" aria-labelledby="problem-h">
+  <div class="wrap two">
+    <h2 id="problem-h">Care, coordinated from three states away</h2>
+    <div class="prose">
+      <p class="stat"><strong>More than one in five</strong> US adults is an unpaid family caregiver. Many coordinate care from a distance.</p>
+      <p>What they need to know lives in pill organizers, sticky notes, group texts and the parent's own memory. Voice suits the person being cared for, who may not use apps. The family needs the opposite: a summary, trends, and a nudge when something changes.</p>
+      <p>Hearth keeps one shared household state that every device and family member reaches through Alexa+. The care recipient adds to it simply by talking.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Story: pinned, scrubbed sequence -->
+<section class="story" id="story" aria-labelledby="story-h">
+  <div class="wrap">
+    <h2 id="story-h">One day with Hearth</h2>
+    <p class="section-sub">Scroll through Asha's day. She's 78 and lives alone; Priya, her daughter, coordinates care remotely. (Demo household.)</p>
+  </div>
+
+  <div class="story-pin">
+    <div class="stage" aria-hidden="true">
+      <div class="clock"><span id="clockTime">8:02</span><small id="clockAmpm">am</small><em id="clockPlace">Asha's kitchen</em></div>
+
+      <div class="mini-speaker">
+        <svg viewBox="0 0 200 120"><path d="M14 52 v30 c0 16 38 28 86 28 s86 -12 86 -28 v-30" fill="var(--device-bottom)"/><ellipse cx="100" cy="52" rx="86" ry="28" fill="var(--device-cap)"/><path class="mini-ring" d="M14 82 c0 16 38 28 86 28 s86 -12 86 -28" fill="none" stroke="#3fd0ff" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+
+      <p class="s-line s-you" data-step="1">“I just took my lisinopril and metformin.”</p>
+      <p class="s-line s-you" data-step="2">“I slept badly and my knee really hurts on the stairs, maybe a 7.”</p>
+      <p class="s-line s-you" data-step="3">“I tripped on the rug and I'm a bit dizzy.”</p>
+      <p class="s-line s-you s-priya" data-step="6">“How has Mom been doing this week?”</p>
+
+      <div class="trace-chip" data-step="1"><code>record_dose</code> lisinopril, metformin</div>
+      <div class="trace-chip" data-step="2"><code>log_checkin</code> pain 7, compared with her baseline</div>
+      <div class="trace-chip warn" data-step="3"><code>log_checkin</code> concern: urgent</div>
+      <div class="trace-chip" data-step="6"><code>family_digest</code> MCP App</div>
+
+      <div class="baseline" data-step="2">
+        <svg viewBox="0 0 240 130">
+          <rect x="10" y="78" width="200" height="26" rx="6" fill="rgba(92,154,120,.22)"/>
+          <text x="14" y="122">her usual range</text>
+          <polyline points="18,92 46,88 74,94 102,90 130,86 158,80" fill="none" stroke="#a8998b" stroke-width="2" stroke-linejoin="round"/>
+          <line x1="158" y1="80" x2="214" y2="30" stroke="#e46a2e" stroke-width="2" stroke-dasharray="4 4"/>
+          <circle cx="214" cy="30" r="7" fill="#e46a2e"/>
+          <text x="148" y="20" class="b-today">today: 7</text>
+        </svg>
+        <span>Pain, last 7 days</span>
+      </div>
+
+      <div class="elicit" data-step="4">
+        <span class="elicit-k">Hearth is asking</span>
+        <p>From Asha's check-in: possible fall, dizziness. Should I alert Priya right away?</p>
+        <div class="elicit-btns"><span class="yes">Alert Priya now</span><span>Not now</span></div>
+      </div>
+
+      <div class="phone" data-step="5">
+        <div class="notch"></div>
+        <div class="push">
+          <span class="push-app">Hearth <i>now</i></span>
+          <b>Asha reported</b>
+          <span>Tripped on the rug, a bit dizzy. (via Hearth check-in)</span>
+        </div>
+      </div>
+
+      <div class="digest" data-step="6">
+        <div class="d-head"><b>How Asha is doing</b><span>Last 7 days</span></div>
+        <div class="d-kpis">
+          <div class="d-ring">
+            <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="7"/><circle class="d-ring-fill" cx="32" cy="32" r="26" fill="none" stroke="var(--sage)" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="88 100" transform="rotate(-90 32 32)"/></svg>
+            <span><b>88%</b>meds taken</span>
+          </div>
+          <div class="d-spark">
+            <svg viewBox="0 0 140 48"><polyline class="spark" points="4,40 24,38 44,39 64,34 84,28 104,20 124,12 136,8" fill="none" stroke="var(--ember)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pathLength="100"/></svg>
+            <span>Pain trending up</span>
+          </div>
+        </div>
+        <ul class="d-flags">
+          <li>Missed evening atorvastatin doses</li>
+          <li>Metformin refill due in a few days</li>
+          <li>Orthopedics follow-up has no driver yet</li>
+        </ul>
+        <small class="d-note">Illustrative, from the seeded demo household.</small>
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li data-step="1"><time>8:02 am</time><h3>Mom just talks</h3><p>Asha tells the speaker in her kitchen that she took her pills. Hearth logs each dose against her schedule and keeps count of what's left.</p></li>
+      <li data-step="2"><time>8:05 am</time><h3>Compared with her baseline</h3><p>A morning check-in about sleep and a sore knee is scored against her recent pain, mood and sleep, so Hearth knows whether it matters.</p></li>
+      <li data-step="3"><time>11:40 am</time><h3>Something sounds wrong</h3><p>A fall and dizziness. The check-in comes back urgent, and Hearth doesn't just file it away.</p></li>
+      <li data-step="4"><time>11:40 am</time><h3>It asks first</h3><p>In the middle of the tool call, Hearth uses MCP elicitation to ask Asha whether to alert Priya. Nothing is sent without a yes.</p></li>
+      <li data-step="5"><time>11:41 am</time><h3>Priya's phone buzzes</h3><p>A push notification through ntfy.sh, or any webhook such as Slack or Discord.</p></li>
+      <li data-step="6"><time>9:14 pm</time><h3>The family catches up</h3><p>From her own home, Priya asks how Mom is doing. Hearth answers out loud and, on screen devices, renders an MCP App card with trends and flags.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- Under the hood -->
+<section class="hood band" id="hood" aria-labelledby="hood-h">
+  <div class="wrap">
+    <h2 id="hood-h">Built on MCP 2025-11-25</h2>
+    <p class="section-sub">A self-hosted server over Streamable HTTP, using the official TypeScript SDK. Each connection gets its own <code>McpServer</code>, so elicitation reaches the right device, and every connection shares one SQLite store.</p>
+
+    <dl class="features">
+      <div><dt>Tools with structured results</dt><dd>Medication schedule, dose logging, refill forecasting and check-ins return <code>structuredContent</code> and annotations.</dd></div>
+      <div><dt>Elicitation, form mode</dt><dd>“Should I alert Priya now?” as a boolean, and a titled-enum (<code>oneOf</code>) picker for who drives to an appointment.</dd></div>
+      <div><dt>An MCP App</dt><dd>The family digest card at <code>ui://hearth/digest</code>, served as <code>text/html;profile=mcp-app</code>.</dd></div>
+      <div><dt>Resources and a template</dt><dd><code>hearth://profile</code> and <code>hearth://day/{date}</code>, with completion.</dd></div>
+      <div><dt>Prompts</dt><dd>Guided routines: <code>morning_checkin</code> and <code>weekly_family_update</code>.</dd></div>
+      <div><dt>Logging notifications</dt><dd>An audit trail through <code>notifications/message</code> whenever an alert goes out.</dd></div>
+      <div><dt>A confirm fallback</dt><dd>Clients without elicitation get a read-back-and-confirm flow, so nothing is sent without a yes.</dd></div>
+      <div><dt>Transport hardening</dt><dd>GET SSE streams, DELETE teardown, Origin validation (403) against DNS rebinding, CORS for browser clients.</dd></div>
+    </dl>
+
+    <figure class="arch">
+      <svg viewBox="0 0 960 400" role="img" aria-labelledby="arch-t arch-d">
+        <title id="arch-t">Hearth architecture</title>
+        <desc id="arch-d">Alexa+ on an Echo, the web simulator, MCP Inspector and Claude connect to the Hearth MCP server over Streamable HTTP. Hearth sends push notifications through ntfy.sh and webhooks, and stores everything in SQLite.</desc>
+        <g class="arch-paths" fill="none" stroke="var(--line-strong)" stroke-width="2">
+          <path id="p1" d="M210 70 C 300 70, 300 200, 390 200"/>
+          <path id="p2" d="M210 160 C 300 160, 300 200, 390 200"/>
+          <path id="p3" d="M210 250 C 300 250, 300 200, 390 200"/>
+          <path id="p4" d="M210 340 C 300 340, 300 200, 390 200"/>
+          <path id="p5" d="M570 200 C 660 200, 660 90, 750 90"/>
+          <path id="p6" d="M570 200 C 660 200, 660 200, 750 200"/>
+          <path id="p7" d="M570 200 C 660 200, 660 310, 750 310"/>
+        </g>
+        <g class="arch-nodes">
+          <g><rect x="20" y="46" width="190" height="48" rx="24"/><text x="115" y="75">Echo with Alexa+</text></g>
+          <g><rect x="20" y="136" width="190" height="48" rx="24"/><text x="115" y="165">Alexa+ simulator</text></g>
+          <g><rect x="20" y="226" width="190" height="48" rx="24"/><text x="115" y="255">MCP Inspector</text></g>
+          <g><rect x="20" y="316" width="190" height="48" rx="24"/><text x="115" y="345">Claude and others</text></g>
+          <g class="hub"><rect x="390" y="140" width="180" height="120" rx="20"/><text x="480" y="192" class="hub-t">Hearth</text><text x="480" y="218" class="hub-s">MCP server</text></g>
+          <g><rect x="750" y="66" width="190" height="48" rx="24"/><text x="845" y="95">ntfy.sh push</text></g>
+          <g><rect x="750" y="176" width="190" height="48" rx="24"/><text x="845" y="205">Webhooks</text></g>
+          <g><rect x="750" y="286" width="190" height="48" rx="24"/><text x="845" y="315">SQLite household</text></g>
+        </g>
+        <text class="arch-label" x="300" y="388">Streamable HTTP: POST, GET and DELETE on /mcp</text>
+        <g class="packets"></g>
+      </svg>
+    </figure>
+  </div>
+</section>
+
+<!-- Echo -->
+<section class="echo" aria-labelledby="echo-h">
+  <div class="wrap two">
+    <div>
+      <h2 id="echo-h">Runs on a real Echo Dot</h2>
+      <p class="section-sub">Hearth deploys as an Alexa+ add-on through the Alexa+ MCP Toolkit. A family member links it in the Alexa app with a household PIN, and from then on the speaker on the counter calls Hearth's tools.</p>
+      <p class="flowline"><code>Echo Dot → Alexa+ → tunnel → Hearth on your laptop</code></p>
+    </div>
+    <ul class="checks">
+      <li>OAuth 2.1 service tokens with <code>client_credentials</code></li>
+      <li>Account linking with PKCE (S256), approved with a household PIN</li>
+      <li>RFC 9728 Protected Resource Metadata</li>
+      <li>A bare <code>401</code> to trigger linking</li>
+      <li>Tool round trips under 500 ms, checked in tests</li>
+      <li>Listing pages, example phrases and art</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Open source -->
+<section class="probe band" id="probe" aria-labelledby="probe-h">
+  <div class="wrap two">
+    <div>
+      <h2 id="probe-h">mcp-http-probe</h2>
+      <p class="section-sub">Our open-source contribution: a dependency-free conformance checker for MCP servers on the Streamable HTTP transport. It runs 23 checks from the 2025-11-25 spec and links each failure to the rule it breaks.</p>
+      <p>SDK tests check the SDK. Real servers break in the glue: session maps, auth middleware, proxies and default security settings. Its first run found that a server built from the standard TypeScript SDK example skips the MUST-level Origin check.</p>
+      <div class="ctas">
+        <a class="btn" href="https://www.npmjs.com/package/mcp-http-probe">npm package</a>
+        <a class="btn" href="https://github.com/marketplace/actions/mcp-http-probe">GitHub Action</a>
+        <a class="btn quiet" href="https://github.com/Chinmay-92/mcp-http-probe">Source</a>
+      </div>
+      <pre class="snippet"><code>- uses: Chinmay-92/mcp-http-probe@v1
+  with:
+    url: http://127.0.0.1:8787/mcp
+    strict: "true"</code></pre>
+    </div>
+    <div class="term" role="img" aria-label="Terminal running mcp-http-probe against Hearth: 23 passed, 0 failed, 0 warnings">
+      <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <pre class="term-body" aria-hidden="true"><span class="prompt">$ </span><span id="termCmd"></span><span class="caret"></span>
+<span id="termOut"></span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Demo -->
+<section class="demo" id="demo" aria-labelledby="demo-h">
+  <div class="wrap">
+    <h2 id="demo-h">See it working</h2>
+    <p class="section-sub">Under three minutes: the Echo Dot, the simulator's MCP trace, elicitation, a push notification and the family digest.</p>
+    <div class="video" id="video">
+      <div class="poster">
+        <svg viewBox="0 0 32 32" width="56" height="56" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="var(--ember)"/><circle cx="16" cy="16" r="14" fill="none" stroke="var(--ember)" stroke-opacity=".3" stroke-width="3"/></svg>
+        <p>Demo video coming soon</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick start -->
+<section class="start band" aria-labelledby="start-h">
+  <div class="wrap">
+    <h2 id="start-h">Run it yourself</h2>
+    <p class="section-sub">Needs Node.js 22.18 or later. No build step. The first run seeds a demo household.</p>
+    <div class="code">
+      <button class="copy" type="button" data-copy="qs1">Copy</button>
+      <pre id="qs1"><code>git clone https://github.com/Chinmay-92/hearth.git &amp;&amp; cd hearth
+npm install
+npm run dev:server     # http://127.0.0.1:8787/mcp</code></pre>
+    </div>
+    <div class="code">
+      <button class="copy" type="button" data-copy="qs2">Copy</button>
+      <pre id="qs2"><code>export ANTHROPIC_API_KEY=sk-ant-...
+npm run dev:sim        # open http://127.0.0.1:5173 in Chrome
+npm run probe          # 23 conformance checks</code></pre>
+    </div>
+    <p class="more">Connecting your own Echo Dot is covered step by step in <a href="https://github.com/Chinmay-92/hearth/blob/main/alexa/README.md">alexa/README.md</a>.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Built for the Amazon “Build, Ship, Shape” hackathon, in the Alexa+ track and the Open Source mini-challenge.</p>
+    <p>MIT licensed. Hearth is not a medical device; in an emergency, call 911.</p>
+    <p><a href="https://github.com/Chinmay-92/hearth">github.com/Chinmay-92/hearth</a></p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js" defer></script>
+<script src="assets/main.js" defer></script>
+</body>
+</html>
