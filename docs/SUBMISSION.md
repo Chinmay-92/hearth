@@ -25,7 +25,7 @@ An Alexa+ caregiving co-pilot: one shared memory for an aging parent and the fam
 The care recipient just talks: "Did I take my pills?", "I took my metformin", "My knee hurts on the stairs, maybe a 7." Hearth logs each statement, compares it with her recent baseline, and decides whether it matters. Family members ask their own Alexa "How's Mom doing this week?" and get a short spoken answer plus an **MCP App** card on screen devices. The card shows adherence, pain, sleep and mood trends, missed doses, refills running out, and appointments that still need a driver.
 
 It acts as an agent, not just a Q&A bot:
-- **Escalation with consent.** When a check-in mentions a fall, chest pain or confusion, the tool uses **elicitation** in the middle of the call to ask "Should I alert Priya right away?" and sends a push notification on a yes.
+- **Escalation with consent.** When a check-in mentions a fall, chest pain or confusion, the tool uses **elicitation** in the middle of the call to ask "Should I alert Sarah right away?" and sends a push notification on a yes.
 - **Ride coordination.** Scheduling an appointment asks who will drive (a titled-enum elicitation), records the answer, and notifies that person.
 - **State across sessions and people.** Every device and family member shares one household store, so what Mom logs at 8am is in her daughter's 9pm digest.
 - **Confirmation fallback.** Clients without elicitation get a read-back-and-confirm flow, so nothing is ever sent without a yes.

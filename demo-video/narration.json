@@ -2,7 +2,7 @@
  "problem": "More than one in five American adults is an unpaid family caregiver. Many do it from far away, piecing care together from pill organizers, sticky notes and group texts.",
  "solution": "Hearth turns Alexa+ into the shared memory between a parent and the family looking after her. It's a self-hosted MCP server, built on the latest MCP spec, over Streamable HTTP.",
  "intro": "Here it is in a simulated Alexa+ Echo Show. Every call on the right is live MCP traffic to Hearth.",
- "fall": "Asha just talks. When something sounds urgent, Hearth asks before alerting anyone.",
+ "fall": "Margaret just talks. When something sounds urgent, Hearth asks before alerting anyone.",
  "elicit": "That question comes from inside the tool call, using MCP elicitation.",
  "card": "The weekly digest is an MCP App, rendered right on the screen.",
  "arch": "Every device and family member shares one household. Hearth is also built for the Alexa+ MCP Toolkit, with OAuth account linking, PKCE, and tool calls under half a second.",

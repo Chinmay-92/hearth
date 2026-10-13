@@ -102,12 +102,12 @@
 <section class="story" id="story" aria-labelledby="story-h">
   <div class="wrap">
     <h2 id="story-h">One day with Hearth</h2>
-    <p class="section-sub">Scroll through Asha's day. She's 78 and lives alone; Priya, her daughter, coordinates care remotely. (Demo household.)</p>
+    <p class="section-sub">Scroll through Margaret's day. She's 78 and lives alone; Sarah, her daughter, coordinates care remotely. (Demo household.)</p>
   </div>
 
   <div class="story-pin">
     <div class="stage" aria-hidden="true">
-      <div class="clock"><span id="clockTime">8:02</span><small id="clockAmpm">am</small><em id="clockPlace">Asha's kitchen</em></div>
+      <div class="clock"><span id="clockTime">8:02</span><small id="clockAmpm">am</small><em id="clockPlace">Margaret's kitchen</em></div>
 
       <div class="mini-speaker">
         <svg viewBox="0 0 200 120"><path d="M14 52 v30 c0 16 38 28 86 28 s86 -12 86 -28 v-30" fill="var(--device-bottom)"/><ellipse cx="100" cy="52" rx="86" ry="28" fill="var(--device-cap)"/><path class="mini-ring" d="M14 82 c0 16 38 28 86 28 s86 -12 86 -28" fill="none" stroke="#3fd0ff" stroke-width="4" stroke-linecap="round"/></svg>
@@ -116,7 +116,7 @@
       <p class="s-line s-you" data-step="1">“I just took my lisinopril and metformin.”</p>
       <p class="s-line s-you" data-step="2">“I slept badly and my knee really hurts on the stairs, maybe a 7.”</p>
       <p class="s-line s-you" data-step="3">“I tripped on the rug and I'm a bit dizzy.”</p>
-      <p class="s-line s-you s-priya" data-step="6">“How has Mom been doing this week?”</p>
+      <p class="s-line s-you s-sarah" data-step="6">“How has Mom been doing this week?”</p>
 
       <div class="trace-chip" data-step="1"><code>record_dose</code> lisinopril, metformin</div>
       <div class="trace-chip" data-step="2"><code>log_checkin</code> pain 7, compared with her baseline</div>
@@ -137,21 +137,21 @@
 
       <div class="elicit" data-step="4">
         <span class="elicit-k">Hearth is asking</span>
-        <p>From Asha's check-in: possible fall, dizziness. Should I alert Priya right away?</p>
-        <div class="elicit-btns"><span class="yes">Alert Priya now</span><span>Not now</span></div>
+        <p>From Margaret's check-in: possible fall, dizziness. Should I alert Sarah right away?</p>
+        <div class="elicit-btns"><span class="yes">Alert Sarah now</span><span>Not now</span></div>
       </div>
 
       <div class="phone" data-step="5">
         <div class="notch"></div>
         <div class="push">
           <span class="push-app">Hearth <i>now</i></span>
-          <b>Asha reported</b>
+          <b>Margaret reported</b>
           <span>Tripped on the rug, a bit dizzy. (via Hearth check-in)</span>
         </div>
       </div>
 
       <div class="digest" data-step="6">
-        <div class="d-head"><b>How Asha is doing</b><span>Last 7 days</span></div>
+        <div class="d-head"><b>How Margaret is doing</b><span>Last 7 days</span></div>
         <div class="d-kpis">
           <div class="d-ring">
             <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="7"/><circle class="d-ring-fill" cx="32" cy="32" r="26" fill="none" stroke="var(--sage)" stroke-width="7" stroke-linecap="round" pathLength="100" stroke-dasharray="88 100" transform="rotate(-90 32 32)"/></svg>
@@ -172,12 +172,12 @@
     </div>
 
     <ol class="steps">
-      <li data-step="1"><time>8:02 am</time><h3>Mom just talks</h3><p>Asha tells the speaker in her kitchen that she took her pills. Hearth logs each dose against her schedule and keeps count of what's left.</p></li>
+      <li data-step="1"><time>8:02 am</time><h3>Mom just talks</h3><p>Margaret tells the speaker in her kitchen that she took her pills. Hearth logs each dose against her schedule and keeps count of what's left.</p></li>
       <li data-step="2"><time>8:05 am</time><h3>Compared with her baseline</h3><p>A morning check-in about sleep and a sore knee is scored against her recent pain, mood and sleep, so Hearth knows whether it matters.</p></li>
       <li data-step="3"><time>11:40 am</time><h3>Something sounds wrong</h3><p>A fall and dizziness. The check-in comes back urgent, and Hearth doesn't just file it away.</p></li>
-      <li data-step="4"><time>11:40 am</time><h3>It asks first</h3><p>In the middle of the tool call, Hearth uses MCP elicitation to ask Asha whether to alert Priya. Nothing is sent without a yes.</p></li>
-      <li data-step="5"><time>11:41 am</time><h3>Priya's phone buzzes</h3><p>A push notification through ntfy.sh, or any webhook such as Slack or Discord.</p></li>
-      <li data-step="6"><time>9:14 pm</time><h3>The family catches up</h3><p>From her own home, Priya asks how Mom is doing. Hearth answers out loud and, on screen devices, renders an MCP App card with trends and flags.</p></li>
+      <li data-step="4"><time>11:40 am</time><h3>It asks first</h3><p>In the middle of the tool call, Hearth uses MCP elicitation to ask Margaret whether to alert Sarah. Nothing is sent without a yes.</p></li>
+      <li data-step="5"><time>11:41 am</time><h3>Sarah's phone buzzes</h3><p>A push notification through ntfy.sh, or any webhook such as Slack or Discord.</p></li>
+      <li data-step="6"><time>9:14 pm</time><h3>The family catches up</h3><p>From her own home, Sarah asks how Mom is doing. Hearth answers out loud and, on screen devices, renders an MCP App card with trends and flags.</p></li>
     </ol>
   </div>
 </section>
@@ -190,7 +190,7 @@
 
     <dl class="features">
       <div><dt>Tools with structured results</dt><dd>Medication schedule, dose logging, refill forecasting and check-ins return <code>structuredContent</code> and annotations.</dd></div>
-      <div><dt>Elicitation, form mode</dt><dd>“Should I alert Priya now?” as a boolean, and a titled-enum (<code>oneOf</code>) picker for who drives to an appointment.</dd></div>
+      <div><dt>Elicitation, form mode</dt><dd>“Should I alert Sarah now?” as a boolean, and a titled-enum (<code>oneOf</code>) picker for who drives to an appointment.</dd></div>
       <div><dt>An MCP App</dt><dd>The family digest card at <code>ui://hearth/digest</code>, served as <code>text/html;profile=mcp-app</code>.</dd></div>
       <div><dt>Resources and a template</dt><dd><code>hearth://profile</code> and <code>hearth://day/{date}</code>, with completion.</dd></div>
       <div><dt>Prompts</dt><dd>Guided routines: <code>morning_checkin</code> and <code>weekly_family_update</code>.</dd></div>

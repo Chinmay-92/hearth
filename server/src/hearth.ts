@@ -16,7 +16,7 @@ const INSTRUCTIONS = `Hearth helps a family care for an older relative through t
 The person speaking is usually the care recipient (named in hearth://profile), but family members also use it.
 Keep spoken replies short and warm. Never give medical advice beyond what the family has recorded; for emergencies, tell the person to call 911.
 Typical flows: "did I take my pills?" -> whats_due; "I took my metformin" -> record_dose; "I slept badly and my knee hurts" -> log_checkin (then follow its suggestion);
-"how's Mom doing this week?" -> family_digest; "tell Priya ..." -> notify_family; "I have a doctor's appointment Tuesday" -> schedule_appointment.`;
+"how's Mom doing this week?" -> family_digest; "tell Sarah ..." -> notify_family; "I have a doctor's appointment Tuesday" -> schedule_appointment.`;
 
 const text = (s: string) => ({ type: "text" as const, text: s });
 
@@ -195,7 +195,7 @@ export function createHearthServer(store: CareStore): McpServer {
       description:
         "Send a message to a family member (or everyone) by push notification. The person is asked to confirm before anything is sent. If the client cannot show a confirmation, read the message back, get a yes, and call again with confirmed=true.",
       inputSchema: {
-        to: z.string().describe("Family member name or relation ('Priya', 'my son'), or 'everyone'."),
+        to: z.string().describe("Family member name or relation ('Sarah', 'my son'), or 'everyone'."),
         message: z.string().min(1),
         urgency: z.enum(["info", "soon", "urgent"]).default("info"),
         from: z.string().optional().describe("Who is speaking, if known. Defaults to the care recipient."),
@@ -286,7 +286,7 @@ export function createHearthServer(store: CareStore): McpServer {
       description:
         "Set which family member is driving to an upcoming appointment and notify them. Use after schedule_appointment says a driver is needed, or when someone says 'I'll take Mom to her appointment'.",
       inputSchema: {
-        driver: z.string().describe("Family member name or relation, e.g. 'Raj' or 'my son'."),
+        driver: z.string().describe("Family member name or relation, e.g. 'David' or 'my son'."),
         appointment_id: z.number().int().optional().describe("From schedule_appointment or family_digest. If omitted, the next appointment without a driver."),
       },
       annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: true },

@@ -101,8 +101,8 @@ describe("MCP over Streamable HTTP", () => {
     let asked = "";
     const { client } = await connect((msg) => ((asked = msg), { action: "accept", content: { alert: true } }));
     const r = await call(client, "log_checkin", { pain: 5, symptoms: "I fell getting out of bed", mood: 2 });
-    assert.match(asked, /Should I alert Priya/);
-    assert.match(textOf(r), /Priya has been alerted/);
+    assert.match(asked, /Should I alert Sarah/);
+    assert.match(textOf(r), /Sarah has been alerted/);
     assert.equal(store.notifications(new Date(0))[0].urgency, "urgent");
     await client.close();
   });
@@ -112,7 +112,7 @@ describe("MCP over Streamable HTTP", () => {
     const first = await call(client, "notify_family", { to: "my son", message: "Can you bring milk?" });
     assert.match(textOf(first), /Not sent yet/);
     const second = await call(client, "notify_family", { to: "my son", message: "Can you bring milk?", confirmed: true });
-    assert.match(textOf(second), /Sent to Raj/);
+    assert.match(textOf(second), /Sent to David/);
     await client.close();
   });
 
@@ -125,11 +125,11 @@ describe("MCP over Streamable HTTP", () => {
 
   test("schedule_appointment asks who drives and notifies them", async () => {
     const { client } = await connect((_m, schema) => {
-      assert.ok(JSON.stringify(schema).includes("Raj (son)"));
-      return { action: "accept", content: { driver: "Raj" } };
+      assert.ok(JSON.stringify(schema).includes("David (son)"));
+      return { action: "accept", content: { driver: "David" } };
     });
     const r = await call(client, "schedule_appointment", { title: "Eye exam", when: "2026-10-20T14:00" });
-    assert.match(textOf(r), /Raj is driving and has been notified/);
+    assert.match(textOf(r), /David is driving and has been notified/);
     await client.close();
   });
 
@@ -139,8 +139,8 @@ describe("MCP over Streamable HTTP", () => {
     const id = (r.structuredContent as { appointment: { id: number } }).appointment.id;
     assert.match(textOf(r), new RegExp(`call assign_driver with appointment_id ${id}`));
     const a = await call(client, "assign_driver", { driver: "my daughter", appointment_id: id });
-    assert.match(textOf(a), /Priya is driving to Dental cleaning/);
-    assert.equal(store.notifications(new Date(0))[0].to, "Priya");
+    assert.match(textOf(a), /Sarah is driving to Dental cleaning/);
+    assert.equal(store.notifications(new Date(0))[0].to, "Sarah");
     await client.close();
   });
 

@@ -64,9 +64,9 @@ const scenes = {
     const line2 = add(`<div class="abs" style="left:150px;top:700px;width:700px;font:400 32px/1.4 Inter;color:var(--muted)">Many coordinate care from far away, and the information lives everywhere.</div>`);
     const frags = [
       add(`<div class="abs card" style="left:1080px;top:120px;width:380px;background:#fff3b8;border-color:#ecd98a;transform:rotate(-4deg);font:500 30px/1.3 Inter">Did Mom take her 8pm pill??</div>`),
-      add(`<div class="abs bubble" style="left:1500px;top:200px;background:#dfe9ff;color:#1f2a44">Priya: who's driving Mom on Friday?</div>`),
+      add(`<div class="abs bubble" style="left:1500px;top:200px;background:#dfe9ff;color:#1f2a44">Sarah: who's driving Mom on Friday?</div>`),
       add(`<div class="abs card" style="left:1180px;top:420px;width:470px"><div class="kicker" style="font-size:16px;margin-bottom:14px">Pill organizer</div><div style="display:flex;gap:10px">${"SMTWTFS".split("").map((d, i) => `<div style="flex:1;height:70px;border-radius:12px;border:2px solid var(--line);display:grid;place-items:center;font:600 22px Inter;background:${[1, 2, 4].includes(i) ? "#f7d9c9" : "#fff"}">${d}</div>`).join("")}</div></div>`),
-      add(`<div class="abs bubble" style="left:1030px;top:700px;background:#e3f1e8;color:#21402f">Raj: dropped off groceries 👍</div>`),
+      add(`<div class="abs bubble" style="left:1030px;top:700px;background:#e3f1e8;color:#21402f">David: dropped off groceries 👍</div>`),
       add(`<div class="abs card" style="left:1460px;top:760px;width:330px;transform:rotate(3deg)"><div class="kicker" style="font-size:16px;margin-bottom:10px">Ortho · Fri 10:30</div><div style="font:500 28px Inter">Driver: <span style="color:var(--ember)">???</span></div></div>`),
       add(`<div class="abs card" style="left:1590px;top:520px;width:250px;transform:rotate(-6deg);font:500 26px/1.3 Inter">Metformin running low?</div>`),
     ];
@@ -87,8 +87,8 @@ const scenes = {
       return add(`<div class="abs card" style="left:${a[0]}px;top:${a[1]}px;font:500 24px Inter;padding:16px 22px">${t}</div>`);
     });
     const svg = add(`<svg class="abs" style="left:0;top:0" width="1920" height="1080"><path id="pa" d="M420 480 C 600 480, 700 480, 810 480" stroke="#e46a2e" stroke-width="4" fill="none" stroke-dasharray="10 12"/><path id="pb" d="M1110 480 C 1220 480, 1320 480, 1500 480" stroke="#e46a2e" stroke-width="4" fill="none" stroke-dasharray="10 12"/></svg>`);
-    const left = add(`<div class="abs node card" style="left:120px;top:370px">🎙️ Asha<small>talks to the Echo in her kitchen</small></div>`);
-    const right = add(`<div class="abs node card" style="left:1500px;top:370px">📱 Priya<small>three states away</small></div>`);
+    const left = add(`<div class="abs node card" style="left:120px;top:370px">🎙️ Margaret<small>talks to the Echo in her kitchen</small></div>`);
+    const right = add(`<div class="abs node card" style="left:1500px;top:370px">📱 Sarah<small>three states away</small></div>`);
     const chips = add(`<div class="abs center" style="top:800px;color:var(--ink)"><span class="chip">MCP 2025-11-25</span><span class="chip">Streamable HTTP</span><span class="chip">self-hosted</span></div>`);
     tl.from(hub, { scale: 0, duration: 1, ease: "back.out(1.4)" }, .2);
     frags.forEach((f, i) => tl.to(f, { left: 860, top: 460, scale: .2, opacity: 0, duration: 1.1, ease: "power2.in" }, .6 + i * .18));

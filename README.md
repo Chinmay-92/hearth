@@ -4,7 +4,7 @@
 
 Mom talks to the Echo in her kitchen: *"I took my metformin."* *"I slept badly and my knee hurts on the stairs."* Hearth records it, compares it with her baseline, and decides whether it matters. Her daughter, three states away, asks her own Alexa *"How's Mom doing this week?"* and gets a spoken answer and an interactive card. The card shows medication adherence, pain and sleep trends, missed doses, a refill running out, and an orthopedics appointment that still has no driver.
 
-If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. In the middle of the tool call it asks her, *"Should I alert Priya right away?"*, and on a yes it sends Priya a push notification.
+If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. In the middle of the tool call it asks her, *"Should I alert Sarah right away?"*, and on a yes it sends Sarah a push notification.
 
 > Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**), running on a **real Echo Dot** through the Alexa+ MCP Toolkit, with a web simulator as a fallback
 > Mini-challenge: **Open Source**, with [`mcp-http-probe`](https://github.com/Chinmay-92/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers (on [npm](https://www.npmjs.com/package/mcp-http-probe) and the [GitHub Marketplace](https://github.com/marketplace/actions/mcp-http-probe))
@@ -24,11 +24,11 @@ Hearth connects the two. It keeps **one shared household state** that any device
 | Capability | MCP feature used | Example |
 |---|---|---|
 | Medication schedule, dose logging, refill forecasting | tools with `structuredContent`, annotations | "Did I take my pills?" / "I just took my lisinopril" |
-| Daily check-ins with baseline-aware concern detection | tool → **elicitation** (form mode) when urgent | "I tripped and I'm dizzy" → *"Should I alert Priya now?"* |
+| Daily check-ins with baseline-aware concern detection | tool → **elicitation** (form mode) when urgent | "I tripped and I'm dizzy" → *"Should I alert Sarah now?"* |
 | Family digest with trends and flags | **MCP App** (`ui://hearth/digest`, `text/html;profile=mcp-app`) | "How's Mom doing this week?" → interactive card on Echo Show |
-| Messaging family through a confirm step | elicitation, with a `confirmed` fallback for clients without it | "Tell Raj thanks for the groceries" |
-| Appointments with ride coordination | elicitation with a titled-enum (`oneOf`) driver picker, plus notification | "Mom's knee appointment needs a driver" → pick Raj → Raj is notified |
-| State across sessions, devices and family members | shared SQLite store, per-session `McpServer` | Mom logs at 8am; Priya's digest at 9pm sees it |
+| Messaging family through a confirm step | elicitation, with a `confirmed` fallback for clients without it | "Tell David thanks for the groceries" |
+| Appointments with ride coordination | elicitation with a titled-enum (`oneOf`) driver picker, plus notification | "Mom's knee appointment needs a driver" → pick David → David is notified |
+| State across sessions, devices and family members | shared SQLite store, per-session `McpServer` | Mom logs at 8am; Sarah's digest at 9pm sees it |
 | Guided routines | **prompts** (`morning_checkin`, `weekly_family_update`) | |
 | Inspectable data | **resources** (`hearth://profile`), templated `hearth://day/{date}` with completion | |
 | Audit trail | `notifications/message` logging when alerts go out | |
@@ -54,7 +54,7 @@ Both talk to the same Hearth server and household, so something logged on the Ec
 ```
 
 - **`server/`** is the Hearth MCP server. It uses the official `@modelcontextprotocol/sdk` 1.32.1, whose `LATEST_PROTOCOL_VERSION` is `2025-11-25`, over Streamable HTTP with session IDs. On top of that it adds GET SSE streams, DELETE session teardown, Origin validation (403), CORS for browser clients, and optional bearer auth. Each connection gets its own `McpServer`, so elicitation reaches the right device. Every connection shares one `CareStore`.
-- **`simulator/`** is the alternate "simulated Alexa+" path the rules allow. It's a web Echo Show with speech in (Web Speech API), speech out (speechSynthesis), and an ambient home screen. It also hosts MCP Apps (the `ui/initialize` handshake → `tool-input` / `tool-result` → `size-changed`) and answers elicitation by tap or by voice ("yes" / "Raj"). The agent loop is Claude (`claude-opus-5-5`, adaptive thinking, low effort for voice latency) calling Hearth's tools over a real MCP client session. A live **MCP trace** panel shows every `tools/call`, result, card and `elicitation/create`.
+- **`simulator/`** is the alternate "simulated Alexa+" path the rules allow. It's a web Echo Show with speech in (Web Speech API), speech out (speechSynthesis), and an ambient home screen. It also hosts MCP Apps (the `ui/initialize` handshake → `tool-input` / `tool-result` → `size-changed`) and answers elicitation by tap or by voice ("yes" / "David"). The agent loop is Claude (`claude-opus-5-5`, adaptive thinking, low effort for voice latency) calling Hearth's tools over a real MCP client session. A live **MCP trace** panel shows every `tools/call`, result, card and `elicitation/create`.
 - **`packages/mcp-http-probe/`** is the open-source contribution: a dependency-free conformance CLI for Streamable HTTP MCP servers. Hearth passes all 23 checks. It's published on [npm](https://www.npmjs.com/package/mcp-http-probe) (`npx mcp-http-probe <url>`) and as a GitHub Action on the [Marketplace](https://github.com/marketplace/actions/mcp-http-probe), so any MCP server can gate CI on it:
   ```yaml
   - uses: Chinmay-92/mcp-http-probe@v1
@@ -70,7 +70,7 @@ Requires **Node.js 22.18 or later**. The `.ts` files run directly through Node's
 git clone https://github.com/Chinmay-92/hearth.git && cd hearth
 npm install
 
-# 1. Start the MCP server. On first run it seeds a demo household: Asha (78), with daughter Priya and son Raj.
+# 1. Start the MCP server. On first run it seeds a demo household: Margaret (78), with daughter Sarah and son David.
 npm run dev:server          # → http://127.0.0.1:8787/mcp
 
 # 2. In a second terminal, start the Alexa+ simulator
@@ -83,7 +83,7 @@ npm run dev:sim             # → open http://127.0.0.1:5173 in Chrome or Edge (
 npm run probe
 ```
 
-Use the mic button or type. The suggestion chips walk through the demo story. Switch **Speaking:** to Priya to see the family-member side.
+Use the mic button or type. The suggestion chips walk through the demo story. Switch **Speaking:** to Sarah to see the family-member side.
 
 To get real push notifications on your phone, install the ntfy app, subscribe to a topic name of your choice, then reseed:
 

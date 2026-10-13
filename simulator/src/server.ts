@@ -80,7 +80,7 @@ app.post("/api/turn", async (req, res) => {
   res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
   device.stream = res;
   try {
-    await device.sim.turn(String(text).slice(0, 2000), speaker || "Asha", (e) => sse(res, e));
+    await device.sim.turn(String(text).slice(0, 2000), speaker || "Margaret", (e) => sse(res, e));
   } catch (err) {
     console.error(err);
     sse(res, { type: "error", message: err instanceof Error ? err.message : String(err) });

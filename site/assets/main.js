@@ -138,7 +138,7 @@ function heroLoop() {
 function storyTimeline() {
   const step = (n) => $$(`[data-step="${n}"]`, $(".stage"));
   const text = (n) => $(`.steps li[data-step="${n}"]`);
-  const times = { 1: ["8:02", "am", "Asha's kitchen"], 2: ["8:05", "am", "Asha's kitchen"], 3: ["11:40", "am", "Asha's kitchen"], 4: ["11:40", "am", "Asha's kitchen"], 5: ["11:41", "am", "Priya's phone"], 6: ["9:14", "pm", "Priya's home"] };
+  const times = { 1: ["8:02", "am", "Margaret's kitchen"], 2: ["8:05", "am", "Margaret's kitchen"], 3: ["11:40", "am", "Margaret's kitchen"], 4: ["11:40", "am", "Margaret's kitchen"], 5: ["11:41", "am", "Sarah's phone"], 6: ["9:14", "pm", "Sarah's home"] };
   const setClock = (n) => {
     const [t, ap, place] = times[n];
     $("#clockTime").textContent = t; $("#clockAmpm").textContent = ap; $("#clockPlace").textContent = place;

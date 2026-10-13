@@ -108,30 +108,30 @@ const OVERLAY_CSS = `
   };
 
   // ---- the story
-  await label('Morning · Asha at home');
+  await label('Morning · Margaret at home');
   await sleep(1.2);
-  await turn('Asha', 'Did I take my pills this morning?');
-  await turn('Asha', 'I just took my lisinopril and metformin');
+  await turn('Margaret', 'Did I take my pills this morning?');
+  await turn('Margaret', 'I just took my lisinopril and metformin');
   await caption('fall');
-  await turn('Asha', "I tripped on the rug and I'm a bit dizzy", {
+  await turn('Margaret', "I tripped on the rug and I'm a bit dizzy", {
     onElicit: async () => {
       await caption('elicit');
       await tap('#elicit .yes');
       await sleep(0.8);
-      await p.evaluate(() => { const e = document.getElementById('ov-phone'); e.innerHTML = '<div class="t"><i></i>Hearth · now</div><b>Urgent: Asha</b>Asha reported: tripped on the rug and I\'m a bit dizzy. (via Hearth check-in)'; e.classList.add('on'); });
+      await p.evaluate(() => { const e = document.getElementById('ov-phone'); e.innerHTML = '<div class="t"><i></i>Hearth · now</div><b>Urgent: Margaret</b>Margaret reported: tripped on the rug and I\'m a bit dizzy. (via Hearth check-in)'; e.classList.add('on'); });
       await sleep(1.2);
     },
   });
   await sleep(0.6);
   await p.evaluate(() => document.getElementById('ov-phone').classList.remove('on'));
-  await label('That evening · Priya, three states away');
+  await label('That evening · Sarah, three states away');
   await sleep(1.0);
-  await turn('Priya', 'How has Mom been doing this week?');
+  await turn('Sarah', 'How has Mom been doing this week?');
   await caption('card');
   await sleep(1.0);
-  await turn('Priya', "Book Mom's eye exam next Tuesday at 2, she'll need a ride", {
+  await turn('Sarah', "Book Mom's eye exam next Tuesday at 2, she'll need a ride", {
     onElicit: async () => {
-      await tap('#elicit .choices button[data-value="Raj"]');
+      await tap('#elicit .choices button[data-value="David"]');
       await sleep(0.5);
       await tap('#elicit .yes');
     },

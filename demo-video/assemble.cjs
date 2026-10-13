@@ -16,7 +16,7 @@ for (const seg of plan) {
 console.log('total', t.toFixed(2), 's,', clips.length, 'clips');
 // SRT
 const ts = (s) => { const ms = Math.round(s * 1000); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`; };
-const who = { narrator: '', alexa: 'Alexa: ', Asha: 'Asha: ', Priya: 'Priya: ' };
+const who = { narrator: '', alexa: 'Alexa: ', Margaret: 'Margaret: ', Sarah: 'Sarah: ' };
 if (!NO_NARR) fs.writeFileSync('hearth-demo.srt', clips.sort((a, b) => a.at - b.at).map((c, i) => `${i + 1}\n${ts(c.at)} --> ${ts(c.at + c.dur)}\n${who[c.who] ?? ''}${c.text}\n`).join('\n'));
 if (!NO_NARR) fs.writeFileSync('voice-script.txt', clips.map((c) => `[${ts(c.at)}] ${c.who.toUpperCase()}: ${c.text}`).join('\n'));
 // video: concat

@@ -319,14 +319,14 @@ function esc(s) {
 // ------------------------------------------------------------ wiring
 
 const DEMO = [
-  ["Asha", "Did I take my pills this morning?"],
-  ["Asha", "I just took my lisinopril and metformin"],
-  ["Asha", "I slept badly and my knee really hurts on the stairs, maybe a 7"],
-  ["Asha", "I tripped on the rug and I'm a bit dizzy"],
-  ["Priya", "How has Mom been doing this week?"],
-  ["Priya", "Mom's knee appointment needs a driver"],
-  ["Priya", "Book Mom's eye exam next Tuesday at 2, she'll need a ride"],
-  ["Asha", "Tell Raj thank you for the groceries"],
+  ["Margaret", "Did I take my pills this morning?"],
+  ["Margaret", "I just took my lisinopril and metformin"],
+  ["Margaret", "I slept badly and my knee really hurts on the stairs, maybe a 7"],
+  ["Margaret", "I tripped on the rug and I'm a bit dizzy"],
+  ["Sarah", "How has Mom been doing this week?"],
+  ["Sarah", "Mom's knee appointment needs a driver"],
+  ["Sarah", "Book Mom's eye exam next Tuesday at 2, she'll need a ride"],
+  ["Margaret", "Tell David thank you for the groceries"],
 ];
 $("chips").innerHTML = DEMO.map(([who, t], i) => `<button type="button" data-i="${i}" title="as ${who}">${esc(t)}</button>`).join("");
 $("chips").onclick = (ev) => {

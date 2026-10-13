@@ -1,5 +1,5 @@
-// Demo household: Asha (78) lives alone; her daughter Priya coordinates care
-// remotely and her son Raj lives nearby. Two weeks of history are generated
+// Demo household: Margaret (78) lives alone; her daughter Sarah coordinates care
+// remotely and her son David lives nearby. Two weeks of history are generated
 // relative to "now" with a story baked in: knee pain creeping up over the last
 // few days and a pattern of missed evening doses, so the digest has something
 // real to find.
@@ -10,12 +10,12 @@ export function seedDemo(store: CareStore, opts: { notifyTopic?: string } = {}) 
   db.exec("DELETE FROM doses; DELETE FROM checkins; DELETE FROM notes; DELETE FROM appointments; DELETE FROM notifications; DELETE FROM medications; DELETE FROM kv;");
 
   store.setProfile({
-    recipient: "Asha",
-    household: "Asha's home",
-    emergencyContact: "Priya",
+    recipient: "Margaret",
+    household: "Margaret's home",
+    emergencyContact: "Sarah",
     family: [
-      { name: "Priya", relation: "daughter", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
-      { name: "Raj", relation: "son", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
+      { name: "Sarah", relation: "daughter", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
+      { name: "David", relation: "son", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
     ],
   });
 
@@ -62,10 +62,10 @@ export function seedDemo(store: CareStore, opts: { notifyTopic?: string } = {}) 
   }
 
   const daysAgo = (n: number, h = 19) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - n, h).toISOString();
-  store.addNote("Priya", "Dr. Mehta said to keep ibuprofen to twice a day max because of the blood pressure meds.", daysAgo(5));
-  store.addNote("Raj", "Dropped off groceries. Fridge is stocked through Sunday.", daysAgo(2, 17));
+  store.addNote("Sarah", "Dr. Bennett said to keep ibuprofen to twice a day max because of the blood pressure meds.", daysAgo(5));
+  store.addNote("David", "Dropped off groceries. Fridge is stocked through Sunday.", daysAgo(2, 17));
 
   const inDays = (n: number, h: number, m = 0) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + n, h, m).toISOString();
   store.addAppointment({ at: inDays(3, 10, 30), title: "Orthopedics follow-up (knee)", withWhom: "Dr. Alvarez", location: "Lakeside Clinic", driver: null });
-  store.addAppointment({ at: inDays(9, 14), title: "Primary care check-up", withWhom: "Dr. Mehta", location: "Riverside Family Medicine", driver: "Raj" });
+  store.addAppointment({ at: inDays(9, 14), title: "Primary care check-up", withWhom: "Dr. Bennett", location: "Riverside Family Medicine", driver: "David" });
 }

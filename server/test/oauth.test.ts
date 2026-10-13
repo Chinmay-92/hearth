@@ -25,7 +25,7 @@ describe("Alexa+ OAuth", () => {
   before(async () => {
     const store = new CareStore(":memory:", () => new Date(2026, 9, 12, 9, 0));
     seedDemo(store);
-    const oauth = new OAuthServer(store.db, { publicUrl: "http://pending", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, linkPin: PIN, household: () => "Asha's home" });
+    const oauth = new OAuthServer(store.db, { publicUrl: "http://pending", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, linkPin: PIN, household: () => "Margaret's home" });
     const created = createApp(store, { oauth, token: "static-dev-token", publicHosts: ["hearth-demo.example.com"] });
     close = created.close;
     http = created.app.listen(0, "127.0.0.1");
@@ -71,7 +71,7 @@ describe("Alexa+ OAuth", () => {
     const params = { client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "code", scope: "mcp:tools mcp:resources", state: "xyz", code_challenge: challenge, code_challenge_method: "S256", resource };
     const page = await fetch(`${base}/oauth/authorize?${form(params)}`);
     assert.equal(page.status, 200);
-    assert.match(await page.text(), /Asha&#39;s home|Asha's home/);
+    assert.match(await page.text(), /Margaret&#39;s home|Margaret's home/);
     const approved = await fetch(`${base}/oauth/authorize`, { method: "POST", redirect: "manual", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form({ ...params, pin: PIN }) });
     assert.equal(approved.status, 302);
     const loc = new URL(approved.headers.get("location")!);

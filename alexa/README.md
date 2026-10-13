@@ -114,10 +114,10 @@ To start, route a web-simulator session to your device, as described in [Test yo
 | "Alexa, did I take my pills this morning?" | `whats_due` |
 | "I just took my lisinopril and metformin." | `record_dose` ×2, then a refill warning |
 | "I slept badly and my knee hurts, maybe a seven." | `log_checkin` → concern level "watch" |
-| "I tripped on the rug and I feel dizzy." | `log_checkin` → urgent → Alexa offers to alert Priya → `notify_family` |
+| "I tripped on the rug and I feel dizzy." | `log_checkin` → urgent → Alexa offers to alert Sarah → `notify_family` |
 | "How has Mom been doing this week?" | `family_digest` (spoken; shown as a card on an Echo Show) |
-| "Mom's knee appointment needs a driver. Raj can take her." | `assign_driver` → Raj gets a push |
-| "Tell Raj thanks for the groceries." | `notify_family` (read back and confirmed) |
+| "Mom's knee appointment needs a driver. David can take her." | `assign_driver` → David gets a push |
+| "Tell David thanks for the groceries." | `notify_family` (read back and confirmed) |
 
 Watch the Hearth terminal while you talk. Every Alexa+ request shows up there, which makes good B-roll for the demo video.
 

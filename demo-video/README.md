@@ -4,7 +4,7 @@ Renders `hearth-demo.mp4` (about 2:56, 1920×1080) with no screen-recording soft
 
 - **Motion scenes:** `scenes.html` has seven GSAP scenes: title, problem, solution, demo intro, architecture, probe, outro. `render.cjs` seeks each timeline frame by frame and pipes the frames to ffmpeg, so the motion is smooth and deterministic.
 - **Live demo:** `record.cjs` drives the real Alexa+ simulator, in scripted playback mode, against a real Hearth server. It captures the page with the Chrome DevTools screencast and adds captions, scene labels, a tap cursor and the push notification as page overlays.
-- **Voices:** macOS `say`. Narrator: Daniel. Alexa: Samantha. Asha: Grandma. Priya: Tara.
+- **Voices:** ElevenLabs (`eleven_multilingual_v2`) when `ELEVENLABS_API_KEY` is set: narrator Brian, Alexa Matilda, Margaret "Carol" (a Voice Library grandma voice, which must be added to your account), Sarah "Sarah". Clips are cached in `audio/cache`, so re-runs are free. Without a key it falls back to macOS `say`.
 - **Assembly:** `assemble.cjs` joins the segments, places every voice clip at its timestamp, and normalises loudness. It also writes `hearth-demo.srt` (captions for YouTube) and `voice-script.txt` (every line with its start time).
 
 ## Run it
@@ -30,7 +30,7 @@ NO_NARRATOR=1 node assemble.cjs             # → hearth-demo-no-narrator.mp4 (r
 
 ## Use your own voice
 
-`hearth-demo-no-narrator.mp4` has only the in-demo voices: Asha, Priya and Alexa. Record the narrator lines from `voice-script.txt` at the listed start times (eight lines, about 75 seconds in total), save them as `my-narration.wav`, then mix:
+`hearth-demo-no-narrator.mp4` has only the in-demo voices: Margaret, Sarah and Alexa. Record the narrator lines from `voice-script.txt` at the listed start times (eight lines, about 75 seconds in total), save them as `my-narration.wav`, then mix:
 
 ```bash
 ffmpeg -i hearth-demo-no-narrator.mp4 -i my-narration.wav -filter_complex "[0:a][1:a]amix=inputs=2:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k hearth-demo-myvoice.mp4

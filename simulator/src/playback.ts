@@ -53,7 +53,7 @@ const LINES: Line[] = [
         if (r?.refillSoon) low = r;
       }
       let say = done.length ? `Got it, I've logged your ${list(done)}.` : "Sorry, I didn't catch which medication.";
-      if (low) say += ` Heads up: you have ${low.pillsRemaining} ${low.medication.toLowerCase()} left. Want me to ask Priya to pick up a refill?`;
+      if (low) say += ` Heads up: you have ${low.pillsRemaining} ${low.medication.toLowerCase()} left. Want me to ask Sarah to pick up a refill?`;
       return say;
     },
   },
@@ -69,7 +69,7 @@ const LINES: Line[] = [
   {
     match: /(\w+) (?:can|will) (?:drive|take)|needs a driver/i,
     async run(m, _who, call) {
-      const driver = m[1] && !/appointment/i.test(m[1]) ? m[1] : "Raj";
+      const driver = m[1] && !/appointment/i.test(m[1]) ? m[1] : "David";
       const r = await call("assign_driver", { driver });
       const a = r?.appointment;
       return a ? `Okay, ${a.driver} is driving to the ${a.title.replace(/\s*\(.*\)/, "").toLowerCase()} on ${day(a.at)}, and I've let ${a.driver} know.` : "I couldn't find an appointment that needs a driver.";
@@ -87,12 +87,12 @@ const LINES: Line[] = [
         symptoms: m.input!.replace(/^i\s+/i, "").replace(/[.!]$/, ""),
       });
       const c = r?.concern;
-      if (c && c.level !== "none") return "I'm sorry, that sounds rough. I've logged it, and your knee pain is higher than usual. Want me to let Priya know, or just add it to tonight's family update?";
+      if (c && c.level !== "none") return "I'm sorry, that sounds rough. I've logged it, and your knee pain is higher than usual. Want me to let Sarah know, or just add it to tonight's family update?";
       return "Thanks, I've logged your check-in. I hope the knee eases up today.";
     },
   },
   {
-    match: /how('s| has| is) (mom|asha)|doing this week|weekly update/i,
+    match: /how('s| has| is) (mom|margaret)|doing this week|weekly update/i,
     async run(_m, _who, call) {
       const d = await call("family_digest", { days: 7 });
       if (!d) return "Sorry, I couldn't pull the digest together.";
