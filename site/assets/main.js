@@ -17,7 +17,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
     const r = await fetch("assets/demo.mp4", { method: "HEAD" });
     const type = r.headers.get("content-type") || "";
     if (r.ok && type.startsWith("video/")) {
-      host.innerHTML = `<video controls preload="metadata" playsinline poster="assets/og.png"><source src="assets/demo.mp4" type="video/mp4" />Your browser can't play this video.</video>`;
+      host.innerHTML = `<video controls preload="metadata" playsinline poster="assets/demo-poster.jpg"><source src="assets/demo.mp4" type="video/mp4" />Your browser can't play this video.</video>`;
     }
   } catch { /* keep the poster */ }
 })();

@@ -1,0 +1,12 @@
+node_modules/
+audio/
+frames/
+frames.txt
+*.mp4
+*.wav
+*.jpg
+*.srt
+narration-clips.json
+sim-audio.json
+plan.json
+voice-script.txt
