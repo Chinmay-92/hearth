@@ -405,4 +405,4 @@ speechSynthesis?.getVoices();
 connect();
 
 // Exposed for debugging and UI tests.
-window.__hearth = { mountApp, showElicit, onEvent };
+window.__hearth = { mountApp, showElicit, onEvent, showAmbient, clearNotice };

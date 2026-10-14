@@ -108,35 +108,56 @@ const OVERLAY_CSS = `
   };
 
   // ---- the story
+  // Hearth's scheduler fired the 8 AM reminder before the page connected, and the
+  // session replayed it. Hide it now so it can arrive on camera.
+  const notice = await p.evaluate(() => { const t = document.getElementById('noticeText').textContent; window.__hearth.clearNotice(); return t; });
+  if (!notice) throw new Error('expected the 8 AM reminder to be replayed on connect');
+  const phone = (head, title, body) => p.evaluate(([h, t, b]) => { const e = document.getElementById('ov-phone'); e.innerHTML = `<div class="t"><i></i>${h}</div><b>${t}</b>${b}`; e.classList.add('on'); }, [head, title, body]);
+  const phoneOff = () => p.evaluate(() => document.getElementById('ov-phone').classList.remove('on'));
+
   await label('Morning · Margaret at home');
-  await sleep(1.2);
+  await sleep(1.0);
+  await p.evaluate(() => { document.getElementById('notice').hidden = false; document.getElementById('device').dataset.notify = '1'; });
+  await sleep(0.6);
+  await alexaSay(notice.trim());
+  await caption('reminder');
   await turn('Margaret', 'Did I take my pills this morning?');
-  await turn('Margaret', 'I just took my lisinopril and metformin');
   await caption('fall');
   await turn('Margaret', "I tripped on the rug and I'm a bit dizzy", {
     onElicit: async () => {
       await caption('elicit');
       await tap('#elicit .yes');
       await sleep(0.8);
-      await p.evaluate(() => { const e = document.getElementById('ov-phone'); e.innerHTML = '<div class="t"><i></i>Hearth · now</div><b>Urgent: Margaret</b>Margaret reported: tripped on the rug and I\'m a bit dizzy. (via Hearth check-in)'; e.classList.add('on'); });
+      await phone('Hearth · now', 'Urgent: Margaret', 'Margaret reported: tripped on the rug and I\'m a bit dizzy. (via Hearth check-in)');
       await sleep(1.2);
     },
   });
   await sleep(0.6);
-  await p.evaluate(() => document.getElementById('ov-phone').classList.remove('on'));
+  await phoneOff();
   await label('That evening · Sarah, three states away');
   await sleep(1.0);
   await turn('Sarah', 'How has Mom been doing this week?');
   await caption('card');
-  await sleep(1.0);
-  await turn('Sarah', "Book Mom's eye exam next Tuesday at 2, she'll need a ride", {
+  await turn('Sarah', 'Send David the weekly summary', {
     onElicit: async () => {
-      await tap('#elicit .choices button[data-value="David"]');
-      await sleep(0.5);
       await tap('#elicit .yes');
     },
   });
-  await sleep(1.2);
+  const subject = await p.evaluate(() => document.getElementById('noticeText').textContent.split(' · ').slice(1).join(' · '));
+  await phone('Mail · David', subject || "Margaret's week", 'How Margaret did this week: meds, trends, what needs attention, and who is driving.');
+  await sleep(2.2);
+  await phoneOff();
+
+  await label('Next day · a note from the doctor');
+  await p.clock.fastForward(24 * 3600_000 + 25 * 60_000); // the home screen clock moves to the next morning
+  await p.evaluate(() => { window.__hearth.clearNotice(); window.__hearth.showAmbient(); });
+  await sleep(1.0);
+  await tap('#clinic');
+  await p.waitForFunction(() => !document.getElementById('notice').hidden && /Note from/.test(document.getElementById('noticeKind').textContent));
+  await sleep(0.8);
+  await caption('clinic');
+  await turn('Margaret', 'Any notes from the doctor?');
+  await sleep(1.0);
 
   const END = Date.now() / 1000;
   await cdp.send('Page.stopScreencast');

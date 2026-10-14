@@ -1,6 +1,6 @@
 # Demo video pipeline
 
-Renders `hearth-demo.mp4` (about 2:56, 1920×1080) with no screen-recording software and no manual editing:
+Renders `hearth-demo.mp4` (about 2:49, 1920×1080) with no screen-recording software and no manual editing:
 
 - **Motion scenes:** `scenes.html` has seven GSAP scenes: title, problem, solution, demo intro, architecture, probe, outro. `render.cjs` seeks each timeline frame by frame and pipes the frames to ffmpeg, so the motion is smooth and deterministic.
 - **Live demo:** `record.cjs` drives the real Alexa+ simulator, in scripted playback mode, against a real Hearth server. It captures the page with the Chrome DevTools screencast and adds captions, scene labels, a tap cursor and the push notification as page overlays.
@@ -16,8 +16,8 @@ cd demo-video && npm install && npx playwright install chromium
 npm run narration                          # narrator clips → narration-clips.json
 
 # Terminal 1 and 2: a fresh Hearth whose clock starts at 9:12 AM, plus the simulator in playback mode
-(cd ../server && HEARTH_DEMO_TIME=09:12 HEARTH_DB=:memory: HEARTH_DRY_RUN=1 PORT=8790 node src/index.ts)
-(cd ../simulator && HEARTH_PLAYBACK=1 HEARTH_MCP_URL=http://127.0.0.1:8790/mcp PORT=5180 node src/server.ts)
+(cd ../server && HEARTH_DEMO_TIME=09:12 HEARTH_DB=:memory: HEARTH_DRY_RUN=1 HEARTH_INBOX_TOKEN=demo PORT=8790 node src/index.ts)
+(cd ../simulator && HEARTH_PLAYBACK=1 HEARTH_INBOX_TOKEN=demo HEARTH_MCP_URL=http://127.0.0.1:8790/mcp PORT=5180 node src/server.ts)
 
 # Terminal 3
 node record.cjs http://127.0.0.1:5180       # → frames/, frames.txt, sim-audio.json
@@ -30,7 +30,7 @@ NO_NARRATOR=1 node assemble.cjs             # → hearth-demo-no-narrator.mp4 (r
 
 ## Use your own voice
 
-`hearth-demo-no-narrator.mp4` has only the in-demo voices: Margaret, Sarah and Alexa. Record the narrator lines from `voice-script.txt` at the listed start times (eight lines, about 75 seconds in total), save them as `my-narration.wav`, then mix:
+`hearth-demo-no-narrator.mp4` has only the in-demo voices: Margaret, Sarah and Alexa. Record the narrator lines from `voice-script.txt` at the listed start times (11 lines, about 75 seconds in total), save them as `my-narration.wav`, then mix:
 
 ```bash
 ffmpeg -i hearth-demo-no-narrator.mp4 -i my-narration.wav -filter_complex "[0:a][1:a]amix=inputs=2:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k hearth-demo-myvoice.mp4
