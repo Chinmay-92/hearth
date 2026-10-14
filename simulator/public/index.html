@@ -23,6 +23,10 @@
         <div class="view ambient" id="ambient">
           <div class="clock" id="clock">--:--</div>
           <div class="date" id="date"></div>
+          <div class="notice" id="notice" hidden role="status">
+            <div class="notice-k" id="noticeKind"></div>
+            <div class="notice-v" id="noticeText"></div>
+          </div>
           <div class="ambient-cards" id="ambientCards"></div>
         </div>
 
@@ -67,7 +71,10 @@
   <aside class="trace">
     <header>
       <h2>MCP trace</h2>
-      <button id="reset" class="ghost" type="button">New conversation</button>
+      <div class="trace-actions">
+        <button id="clinic" class="ghost" type="button" title="Posts a sample note to Hearth's care-team inbox, as a clinic portal would">Clinic note</button>
+        <button id="reset" class="ghost" type="button">New conversation</button>
+      </div>
     </header>
     <p class="trace-sub" id="conn">Connecting to Hearth…</p>
     <ol id="log"></ol>

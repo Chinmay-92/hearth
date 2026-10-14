@@ -3,11 +3,14 @@
 // device/assistant gets its own elicitation channel, while all of them share
 // the same household state.
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult, ElicitResult } from "@modelcontextprotocol/sdk/types.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import type { CallToolResult, ElicitResult, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { sendAlert as deliverAlert } from "./alerts.ts";
+import { EventHub } from "./events.ts";
 import { assessCheckIn, familyDigest, refillsNeeded, whatsDue } from "./insights.ts";
-import { deliver } from "./notify.ts";
 import { type CareStore, dayKey, type FamilyMember, type Notification } from "./store.ts";
+import { sendWeeklySummary } from "./weekly.ts";
 import { DIGEST_UI_URI, digestAppHtml, MCP_APP_MIME } from "./ui/digest-app.ts";
 
 export const SERVER_INFO = { name: "hearth", title: "Hearth — family caregiving co-pilot", version: "0.1.0" };
@@ -16,7 +19,13 @@ const INSTRUCTIONS = `Hearth helps a family care for an older relative through t
 The person speaking is usually the care recipient (named in hearth://profile), but family members also use it.
 Keep spoken replies short and warm. Never give medical advice beyond what the family has recorded; for emergencies, tell the person to call 911.
 Typical flows: "did I take my pills?" -> whats_due; "I took my metformin" -> record_dose; "I slept badly and my knee hurts" -> log_checkin (then follow its suggestion);
-"how's Mom doing this week?" -> family_digest; "tell Sarah ..." -> notify_family; "I have a doctor's appointment Tuesday" -> schedule_appointment.`;
+"how's Mom doing this week?" -> family_digest; "tell Sarah ..." -> notify_family; "I have a doctor's appointment Tuesday" -> schedule_appointment;
+"send David the weekly summary" -> send_weekly_summary. whats_due also reads out new notes from the care team (e.g. the doctor's office), word for word.
+Hearth knows who is speaking when the device was linked to a person (or the client passes _meta "hearth/speaker"); tools use it as the default sender or author.`;
+
+/** Client-supplied speaker hint for devices shared by several people (e.g. the simulator's "Speaking:" switch). */
+export const SPEAKER_META_KEY = "hearth/speaker";
+type Extra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 
 const text = (s: string) => ({ type: "text" as const, text: s });
 
@@ -27,11 +36,43 @@ function speakDay(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
-export function createHearthServer(store: CareStore): McpServer {
+export function createHearthServer(store: CareStore, hub: EventHub = new EventHub()): McpServer {
   const server = new McpServer(SERVER_INFO, {
     instructions: INSTRUCTIONS,
     capabilities: { logging: {} },
   });
+
+  // Push things Hearth decides on its own (reminders, care-team notes, alerts) to
+  // this client as logging notifications on its standalone SSE stream.
+  const unsubscribe = hub.subscribe((e) => {
+    const level = e.kind === "alert" && e.urgency === "urgent" ? "warning" : e.kind === "dose_reminder" ? "notice" : "info";
+    void server.sendLoggingMessage({ level, logger: `hearth.${e.kind}`, data: e }).catch(() => {});
+  });
+  server.server.onclose = unsubscribe;
+  // Catch a newly connected screen up on recent reminders and notes, once its
+  // standalone SSE stream (opened right after initialization) is likely up.
+  server.server.oninitialized = () => {
+    const missed = hub.recent();
+    if (missed.length) {
+      setTimeout(() => {
+        for (const e of missed) void server.sendLoggingMessage({ level: "info", logger: `hearth.${e.kind}`, data: { ...e, replay: true } }).catch(() => {});
+      }, 500).unref();
+    }
+  };
+
+  /**
+   * Who is speaking: the person the Alexa was linked to (OAuth), else the
+   * client's _meta hint. Returns null when unknown (a shared device).
+   */
+  function speakerOf(extra: Extra): string | null {
+    const linked = (extra.authInfo?.extra as { member?: unknown } | undefined)?.member;
+    const hinted = extra._meta?.[SPEAKER_META_KEY];
+    const name = typeof linked === "string" && linked ? linked : typeof hinted === "string" ? hinted : null;
+    if (!name) return null;
+    const profile = store.requireProfile();
+    if (name.toLowerCase() === profile.recipient.toLowerCase()) return profile.recipient;
+    return store.findFamily(name)?.name ?? null;
+  }
 
   /** Ask the human a structured question if the client supports form elicitation. */
   async function ask(message: string, requestedSchema: Parameters<typeof server.server.elicitInput>[0] extends infer P
@@ -40,23 +81,8 @@ export function createHearthServer(store: CareStore): McpServer {
     return server.server.elicitInput({ mode: "form", message, requestedSchema });
   }
 
-  /**
-   * Record an alert and deliver it in the background. Alexa+ expects tool calls
-   * to return in under 500 ms, so we never wait on the push service.
-   */
-  function sendAlert(member: FamilyMember, urgency: Notification["urgency"], message: string, from: string) {
-    const title = urgency === "urgent" ? `Urgent from ${store.requireProfile().household}` : `Hearth update from ${from}`;
-    const n = store.addNotification({ to: member.name, urgency, message, delivery: member.notify ? "sending" : "outbox" });
-    void server
-      .sendLoggingMessage({ level: urgency === "urgent" ? "warning" : "info", logger: "hearth.notify", data: { to: member.name, urgency } })
-      .catch(() => {});
-    if (member.notify) {
-      void deliver(member, urgency, title, message).then((d) =>
-        store.setNotificationDelivery(n.id, d.ok ? d.channel : `${d.channel} failed: ${d.detail}`),
-      );
-    }
-    return n;
-  }
+  const sendAlert = (member: FamilyMember, urgency: Notification["urgency"], message: string, from: string) =>
+    deliverAlert(store, hub, member, urgency, message, from);
 
   // ---------------------------------------------------------------- tools
 
@@ -69,9 +95,12 @@ export function createHearthServer(store: CareStore): McpServer {
       inputSchema: { horizon_hours: z.number().int().min(1).max(24).default(4).describe("How far ahead to look.") },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ horizon_hours }): Promise<CallToolResult> => {
+    async ({ horizon_hours }, extra): Promise<CallToolResult> => {
       const due = whatsDue(store, horizon_hours);
       const parts: string[] = [];
+      const speaker = speakerOf(extra);
+      const recipient = store.requireProfile().recipient;
+      const careTeam = store.unheardCareTeamNotes();
       const overdue = due.items.filter((i) => i.state === "overdue");
       const now = due.items.filter((i) => i.state === "due_now");
       const later = due.items.filter((i) => i.state === "upcoming");
@@ -81,7 +110,10 @@ export function createHearthServer(store: CareStore): McpServer {
       if (!due.items.length) parts.push(`Nothing is due in the next ${horizon_hours} hours. All caught up.`);
       if (due.nextAppointment) parts.push(`Next appointment: ${due.nextAppointment.title} on ${speakDay(due.nextAppointment.at)} at ${speakTime(due.nextAppointment.at)}.`);
       for (const r of due.refills) parts.push(`${r.medication} has about ${r.daysLeft} days left — time to refill.`);
-      return { content: [text(parts.join(" "))], structuredContent: due };
+      for (const n of careTeam) parts.push(`New note from ${n.author}: "${n.text}" Read this to them word for word.`);
+      // Only the care recipient hearing it counts as heard.
+      if (careTeam.length && speaker === recipient) store.markNotesHeard(careTeam.map((n) => n.id));
+      return { content: [text(parts.join(" "))], structuredContent: { ...due, careTeamNotes: careTeam.map(({ id, at, author, text }) => ({ id, at, author, text })) } };
     },
   );
 
@@ -97,7 +129,9 @@ export function createHearthServer(store: CareStore): McpServer {
       },
       annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
     },
-    async ({ medication, status }): Promise<CallToolResult> => {
+    async ({ medication, status }, extra): Promise<CallToolResult> => {
+      const speaker = speakerOf(extra);
+      const loggedBy = speaker && speaker !== store.requireProfile().recipient ? speaker : null;
       let med = store.findMedication(medication);
       if (!med && /blood pressure/i.test(medication)) med = store.medications().find((m) => /blood pressure/i.test(m.instructions));
       if (!med) {
@@ -107,11 +141,11 @@ export function createHearthServer(store: CareStore): McpServer {
       const { slot, replaced } = store.recordDose(med, status);
       const after = store.findMedication(med.name)!;
       const refill = refillsNeeded(store).find((r) => r.medication === med.name);
-      let msg = `Recorded ${med.name} ${med.dose} as ${status} for the ${speakTime(`${slot}:00`)} dose${replaced ? " (updated the earlier entry)" : ""}.`;
+      let msg = `Recorded ${med.name} ${med.dose} as ${status} for the ${speakTime(`${slot}:00`)} dose${replaced ? " (updated the earlier entry)" : ""}${loggedBy ? `, logged by ${loggedBy}` : ""}.`;
       if (refill) msg += ` Heads up: only ${after.pillsRemaining} left, about ${refill.daysLeft} days. Offer to remind the family to pick up a refill.`;
       return {
         content: [text(msg)],
-        structuredContent: { medication: med.name, slot, status, pillsRemaining: after.pillsRemaining, refillSoon: Boolean(refill) },
+        structuredContent: { medication: med.name, slot, status, pillsRemaining: after.pillsRemaining, refillSoon: Boolean(refill), loggedBy },
       };
     },
   );
@@ -131,8 +165,11 @@ export function createHearthServer(store: CareStore): McpServer {
       },
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
-    async (args): Promise<CallToolResult> => {
-      const entry = { pain: args.pain ?? null, mood: args.mood ?? null, sleepHours: args.sleep_hours ?? null, symptoms: args.symptoms, note: args.note };
+    async (args, extra): Promise<CallToolResult> => {
+      const speaker = speakerOf(extra);
+      const reporter = speaker && speaker !== store.requireProfile().recipient ? speaker : null;
+      const note = reporter ? [`Reported by ${reporter}.`, args.note].filter(Boolean).join(" ") : args.note;
+      const entry = { pain: args.pain ?? null, mood: args.mood ?? null, sleepHours: args.sleep_hours ?? null, symptoms: args.symptoms, note };
       const concern = assessCheckIn(store, entry); // assess before inserting so the baseline excludes today
       const saved = store.addCheckIn(entry);
       const profile = store.requireProfile();
@@ -142,7 +179,8 @@ export function createHearthServer(store: CareStore): McpServer {
       // Urgent: proactively ask, right now, whether to alert the primary caregiver.
       let alerted: string | null = null;
       if (concern.level === "urgent") {
-        const primary = profile.family[0];
+        // If the primary caregiver is the one reporting it, ask about the next person instead.
+        const primary = profile.family.find((f) => f.name !== reporter) ?? profile.family[0];
         const answer = await ask(
           `From ${profile.recipient}'s check-in: ${concern.reasons.join("; ")}. Should I alert ${primary.name} right away?`,
           {
@@ -159,7 +197,7 @@ export function createHearthServer(store: CareStore): McpServer {
           msg += ` They chose not to alert anyone right now.`;
         }
       }
-      return { content: [text(msg)], structuredContent: { checkInId: saved.id, concern, alerted } };
+      return { content: [text(msg)], structuredContent: { checkInId: saved.id, concern, alerted, reportedBy: reporter } };
     },
   );
 
@@ -198,14 +236,14 @@ export function createHearthServer(store: CareStore): McpServer {
         to: z.string().describe("Family member name or relation ('Sarah', 'my son'), or 'everyone'."),
         message: z.string().min(1),
         urgency: z.enum(["info", "soon", "urgent"]).default("info"),
-        from: z.string().optional().describe("Who is speaking, if known. Defaults to the care recipient."),
+        from: z.string().optional().describe("Who is speaking, if known. Defaults to the linked speaker, then the care recipient."),
         confirmed: z.boolean().default(false).describe("Set true only after the person verbally confirmed, when elicitation is unavailable."),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
-    async ({ to, message, urgency, from, confirmed }): Promise<CallToolResult> => {
+    async ({ to, message, urgency, from, confirmed }, extra): Promise<CallToolResult> => {
       const profile = store.requireProfile();
-      const sender = from ?? profile.recipient;
+      const sender = from ?? speakerOf(extra) ?? profile.recipient;
       const who = to.replace(/^my\s+/i, "");
       const recipients = /^(everyone|all|family|the family)$/i.test(who) ? profile.family : [store.findFamily(who)].filter((x): x is FamilyMember => !!x);
       if (!recipients.length) {
@@ -231,7 +269,7 @@ export function createHearthServer(store: CareStore): McpServer {
         };
       }
       const results = recipients.map((r) => ({ to: r.name, notificationId: sendAlert(r, urgency, finalMessage, sender).id }));
-      return { content: [text(`Sent to ${names}.`)], structuredContent: { sent: true, results } };
+      return { content: [text(`Sent to ${names}.`)], structuredContent: { sent: true, from: sender, results } };
     },
   );
 
@@ -312,12 +350,58 @@ export function createHearthServer(store: CareStore): McpServer {
     {
       title: "Add a care note",
       description: "Save a note for the whole family, e.g. instructions from a doctor visit or something the care recipient mentioned. Shows up in the family digest.",
-      inputSchema: { text: z.string().min(1), author: z.string().optional().describe("Who is speaking. Defaults to the care recipient.") },
+      inputSchema: { text: z.string().min(1), author: z.string().optional().describe("Who is speaking. Defaults to the linked speaker, then the care recipient.") },
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
-    async ({ text: body, author }): Promise<CallToolResult> => {
-      const note = store.addNote(author ?? store.requireProfile().recipient, body);
+    async ({ text: body, author }, extra): Promise<CallToolResult> => {
+      const note = store.addNote(author ?? speakerOf(extra) ?? store.requireProfile().recipient, body);
       return { content: [text(`Saved the note for the family.`)], structuredContent: { note } };
+    },
+  );
+
+  server.registerTool(
+    "send_weekly_summary",
+    {
+      title: "Send the weekly summary",
+      description:
+        "Email the weekly family summary (adherence, trends, flags, appointments, notes) to family members who have an email address on file, for those without an Echo. Asks for confirmation first. It is also sent automatically once a week if configured.",
+      inputSchema: {
+        to: z.string().default("everyone").describe("Family member name or relation, or 'everyone'."),
+        confirmed: z.boolean().default(false).describe("Set true only after the person verbally confirmed, when elicitation is unavailable."),
+      },
+      annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: true },
+    },
+    async ({ to, confirmed }): Promise<CallToolResult> => {
+      const profile = store.requireProfile();
+      const who = to.replace(/^my\s+/i, "");
+      const chosen = /^(everyone|all|family|the family)$/i.test(who) ? profile.family : [store.findFamily(who)].filter((x): x is FamilyMember => !!x);
+      if (!chosen.length) return { isError: true, content: [text(`I don't know "${to}". Family on file: ${profile.family.map((f) => f.name).join(", ")}.`)] };
+      const withEmail = chosen.filter((m) => m.email);
+      if (!withEmail.length) {
+        return { isError: true, content: [text(`${chosen.map((m) => m.name).join(" and ")} ${chosen.length > 1 ? "have" : "has"} no email address on file. Add one to the profile first.`)] };
+      }
+      const names = withEmail.map((m) => m.name).join(" and ");
+      const answer = await ask(`Email this week's summary of ${profile.recipient} to ${names}?`, {
+        type: "object",
+        properties: { send: { type: "boolean", title: `Email ${names}`, default: true } },
+        required: ["send"],
+      });
+      if (answer) {
+        if (answer.action !== "accept" || !answer.content?.send) return { content: [text("Okay, I didn't send it.")], structuredContent: { sent: false } };
+      } else if (!confirmed) {
+        return {
+          content: [text(`Not sent yet. Ask: "Email this week's summary to ${names}?" Then call send_weekly_summary again with confirmed=true.`)],
+          structuredContent: { sent: false, needsConfirmation: true },
+        };
+      }
+      // Rendering is instant; delivery runs in the background to stay inside Alexa+'s latency budget.
+      const pending = sendWeeklySummary(store, hub, withEmail);
+      pending.catch((err) => console.error("weekly summary:", err));
+      const { subject } = await Promise.race([pending, new Promise<{ subject: string }>((r) => setTimeout(() => r({ subject: "" }), 300))]);
+      return {
+        content: [text(`Emailing the weekly summary to ${names}.`)],
+        structuredContent: { sent: true, to: withEmail.map((m) => m.name), subject: subject || null },
+      };
     },
   );
 

@@ -5,9 +5,9 @@
 // real to find.
 import { type CareStore, slotKey } from "./store.ts";
 
-export function seedDemo(store: CareStore, opts: { notifyTopic?: string } = {}) {
+export function seedDemo(store: CareStore, opts: { notifyTopic?: string; familyEmail?: string } = {}) {
   const db = store.db;
-  db.exec("DELETE FROM doses; DELETE FROM checkins; DELETE FROM notes; DELETE FROM appointments; DELETE FROM notifications; DELETE FROM medications; DELETE FROM kv;");
+  db.exec("DELETE FROM doses; DELETE FROM checkins; DELETE FROM notes; DELETE FROM appointments; DELETE FROM notifications; DELETE FROM medications; DELETE FROM reminders; DELETE FROM kv;");
 
   store.setProfile({
     recipient: "Margaret",
@@ -15,7 +15,8 @@ export function seedDemo(store: CareStore, opts: { notifyTopic?: string } = {}) 
     emergencyContact: "Sarah",
     family: [
       { name: "Sarah", relation: "daughter", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
-      { name: "David", relation: "son", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined },
+      // David doesn't have an Echo; he gets the weekly summary by email.
+      { name: "David", relation: "son", notify: opts.notifyTopic ? `ntfy:${opts.notifyTopic}` : undefined, email: opts.familyEmail ?? "david@example.com" },
     ],
   });
 

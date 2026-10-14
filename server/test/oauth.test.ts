@@ -25,7 +25,7 @@ describe("Alexa+ OAuth", () => {
   before(async () => {
     const store = new CareStore(":memory:", () => new Date(2026, 9, 12, 9, 0));
     seedDemo(store);
-    const oauth = new OAuthServer(store.db, { publicUrl: "http://pending", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, linkPin: PIN, household: () => "Margaret's home" });
+    const oauth = new OAuthServer(store.db, { publicUrl: "http://pending", clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, linkPin: PIN, household: () => "Margaret's home", members: () => ["Margaret", "Sarah", "David"] });
     const created = createApp(store, { oauth, token: "static-dev-token", publicHosts: ["hearth-demo.example.com"] });
     close = created.close;
     http = created.app.listen(0, "127.0.0.1");
@@ -65,14 +65,14 @@ describe("Alexa+ OAuth", () => {
     return sid;
   }
 
-  async function linkAccount() {
+  async function linkAccount(member?: string) {
     const verifier = randomBytes(32).toString("base64url");
     const challenge = createHash("sha256").update(verifier).digest("base64url");
     const params = { client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "code", scope: "mcp:tools mcp:resources", state: "xyz", code_challenge: challenge, code_challenge_method: "S256", resource };
     const page = await fetch(`${base}/oauth/authorize?${form(params)}`);
     assert.equal(page.status, 200);
     assert.match(await page.text(), /Margaret&#39;s home|Margaret's home/);
-    const approved = await fetch(`${base}/oauth/authorize`, { method: "POST", redirect: "manual", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form({ ...params, pin: PIN }) });
+    const approved = await fetch(`${base}/oauth/authorize`, { method: "POST", redirect: "manual", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form({ ...params, pin: PIN, ...(member ? { member } : {}) }) });
     assert.equal(approved.status, 302);
     const loc = new URL(approved.headers.get("location")!);
     assert.equal(loc.origin + loc.pathname, REDIRECT);
@@ -131,6 +131,23 @@ describe("Alexa+ OAuth", () => {
     assert.equal(call.status, 200);
     assert.match(body, /adherence/);
     assert.ok(ms < 500, `family_digest took ${ms.toFixed(0)} ms`);
+  });
+
+  test("account linking records who uses the Alexa, and tools use it as the speaker (also after refresh)", async () => {
+    const page = await (await fetch(`${base}/oauth/authorize?${form({ client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "code", code_challenge: "a".repeat(43), code_challenge_method: "S256" })}`)).text();
+    assert.match(page, /Who uses this Alexa\?/);
+    assert.match(page, /<option>Sarah<\/option>/);
+    const t = await linkAccount("Sarah");
+    const send = async (bearer: string) => {
+      const sid = await openSession(bearer);
+      const r = await mcp(bearer, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "notify_family", arguments: { to: "David", message: "Can you grab milk?", confirmed: true } } }, sid);
+      return r.text();
+    };
+    assert.match(await send(t.access_token), /"from":"Sarah"/);
+    const refreshed = await (await token({ grant_type: "refresh_token", refresh_token: t.refresh_token })).json();
+    assert.match(await send(refreshed.access_token), /"from":"Sarah"/);
+    // A shared device (no member chosen) falls back to the care recipient.
+    assert.match(await send((await linkAccount()).access_token), /"from":"Margaret"/);
   });
 
   test("authorization codes are single-use and PKCE-bound; wrong PIN is rejected", async () => {

@@ -31,7 +31,13 @@ Hearth connects the two. It keeps **one shared household state** that any device
 | State across sessions, devices and family members | shared SQLite store, per-session `McpServer` | Mom logs at 8am; Sarah's digest at 9pm sees it |
 | Guided routines | **prompts** (`morning_checkin`, `weekly_family_update`) | |
 | Inspectable data | **resources** (`hearth://profile`), templated `hearth://day/{date}` with completion | |
+| Proactive overdue-dose reminders | scheduler → **`notifications/message`** pushed on each session's GET SSE stream | 30 min late: *"Margaret, it's past time for your 8 AM metformin"* on her screen (yellow light). 3 h late: Sarah is told |
+| Notes from the care team | `POST /inbox/notes` (own token) → note + family alert + push; `whats_due` reads it to Mom word for word | A clinic portal or inbound-email webhook posts *"Keep the lisinopril at 10 mg"*; Mom hears it next time she asks |
+| Weekly summary email for family without an Echo | tool with elicitation confirm (`send_weekly_summary`) + weekly schedule | Sundays 6 pm, David gets the digest by email (Resend, or ntfy's email forwarding) |
+| Knowing who is speaking | account linking asks *"Who uses this Alexa?"*; the member rides in the OAuth token to `extra.authInfo`. Shared devices pass `_meta["hearth/speaker"]` | Messages are signed, doses say *"logged by David"*, check-ins *"reported by Sarah"* |
 | Audit trail | `notifications/message` logging when alerts go out | |
+
+Hearth also acts on its own clock. A scheduler checks every minute for doses with nothing logged: after 30 minutes it reminds the care recipient on every connected Hearth screen (and on her phone if `recipientNotify` is set in the profile), and after 3 hours it tells the primary family member. Each stage fires once, and nothing is sent during quiet hours (9 pm–8 am). Alexa+ add-ons can't push to an Echo on their own yet (see [feature request 3](docs/FRICTION_LOG.md#feature-requests)), so on a real Echo Dot the reminder reaches the family's phones and is mentioned the next time Mom asks what's due; screens connected to Hearth over MCP (the simulator, an Echo Show web view) get it straight away and catch up on the last 15 minutes when they connect.
 
 Push notifications are delivered through [ntfy.sh](https://ntfy.sh) (free, no account; install the app and subscribe to a topic) or any webhook (Slack, Discord, Zapier). With neither configured, alerts go to an outbox in the database.
 
@@ -130,19 +136,38 @@ npm run dev:server                                               # Hearth in Ale
 | `HEARTH_PUBLIC_URL` | unset | public HTTPS base URL (tunnel); enables the Host allow-list and OAuth metadata |
 | `HEARTH_OAUTH_CLIENT_ID` / `_SECRET` | unset | Alexa+ OAuth client; setting the ID turns on Alexa+ mode |
 | `HEARTH_LINK_PIN` | unset | household PIN entered during account linking |
+| `HEARTH_REMINDERS` | on | `0` turns off overdue-dose reminders |
+| `HEARTH_WEEKLY_SUMMARY` | `sun 18:00` | when to email the weekly summary; `off` to disable |
+| `RESEND_API_KEY` / `HEARTH_EMAIL_FROM` | unset | send the weekly summary through [Resend](https://resend.com). Without them it goes through ntfy's email forwarding (if the member has an ntfy topic), else the outbox |
+| `HEARTH_DEMO_EMAIL` | `david@example.com` | email address seeded for David (the family member without an Echo) |
+| `HEARTH_INBOX_TOKEN` | unset | turns on `POST /inbox/notes` for care-team notes; set it for the simulator too to enable its **Clinic note** button |
 
-`npm run alexa:credentials` generates the last four into `.env`, which the server and simulator load automatically.
+### Care-team inbox
+
+A clinic portal, Zapier, or an inbound-email webhook (Mailgun, Postmark) can post notes for the family:
+
+```bash
+curl -X POST http://127.0.0.1:8787/inbox/notes -H "Authorization: Bearer $HEARTH_INBOX_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{"from": "Dr. Bennett'"'"'s office", "text": "Keep the lisinopril at 10 mg and book a follow-up in three months."}'
+```
+
+It accepts JSON, form posts (`sender`, `subject`, `stripped-text`) or plain text. The note is saved as a care-team note, the primary family member gets an alert, connected screens show it, and `whats_due` reads it to the care recipient word for word until she has heard it.
+
+`npm run alexa:credentials` generates the Alexa+ variables into `.env`, which the server and simulator load automatically.
 
 ## Tests
 
 ```bash
-npm test          # 27 tests: MCP over HTTP (elicitation, sessions, origin), the Alexa+ OAuth contract, probe vs. 4 reference servers
+npm test          # 41 tests: MCP over HTTP (elicitation, sessions, origin), reminders, inbox, weekly email, speaker identity, the Alexa+ OAuth contract, probe vs. 4 reference servers
 npm run typecheck
 ```
 
 The server tests use the real SDK `Client` over Streamable HTTP. They cover protocol negotiation (`2025-11-25`), persistence across sessions, elicitation accept and decline, the no-elicitation fallbacks (confirmation, `assign_driver`), the titled-enum driver picker, the MCP App resource, and rejection of foreign Origins, Hosts and unknown sessions.
 
-`test/oauth.test.ts` plays the part of Alexa+. It runs metadata discovery, the client-credentials service token (lists tools, gets a 401 on `tools/call`), account linking with PKCE and the PIN, single-use codes, refresh rotation without `resource`, and checks that a linked `tools/call` finishes in under 500 ms.
+`test/features.test.ts` moves a fake clock through a day to check the reminder stages, quiet hours and late starts. It also checks the weekly email (rendered and sent through a stubbed Resend), the care-team inbox (auth, JSON and inbound-email forms, read-out rules), `_meta` speaker identity, and that reminders reach a connected client as `notifications/message`.
+
+`test/oauth.test.ts` plays the part of Alexa+. It runs metadata discovery, the client-credentials service token (lists tools, gets a 401 on `tools/call`), account linking with PKCE and the PIN (including "who uses this Alexa", which then signs messages, also after a refresh), single-use codes, refresh rotation without `resource`, and checks that a linked `tools/call` finishes in under 500 ms.
 
 ## Project layout
 
@@ -152,10 +177,14 @@ server/src/
   app.ts            Streamable HTTP transport, sessions, Origin/Host/CORS
   oauth.ts          OAuth 2.1 server for Alexa+ (service tokens, account linking, PKCE)
   public-pages.ts   privacy/terms pages and listing art for the add-on
-  hearth.ts         MCP tools, resources, prompts, elicitation
+  hearth.ts         MCP tools, resources, prompts, elicitation, speaker identity
   insights.ts       what's due, concern assessment, digest trends
+  scheduler.ts      overdue-dose reminders, weekly summary schedule
+  weekly.ts         weekly summary email (text + HTML)
+  events.ts         event hub: pushes to every connected session
+  alerts.ts         record + deliver a family alert
   store.ts          SQLite care store (node:sqlite)
-  notify.ts         ntfy.sh / webhook delivery
+  notify.ts         ntfy.sh / webhook / email delivery
   seed.ts           demo household with a story in the data
   ui/digest-app.ts  MCP App view for family_digest
 simulator/

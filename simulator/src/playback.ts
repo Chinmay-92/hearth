@@ -23,7 +23,28 @@ function nextWeekday(target: number, hour: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hour)}:00`;
 }
 
+const careTeam = (due: Record<string, any>) =>
+  (due.careTeamNotes ?? []).map((n: any) => ` ${n.author} left a note: ${n.text}`).join("");
+
 const LINES: Line[] = [
+  {
+    match: /weekly summary|summary email|email (?:\w+ )?the (?:weekly )?(?:summary|update)/i,
+    async run(m, _who, call) {
+      const names = [...m.input!.matchAll(/\b(?:to|send|email) (\w+)/gi)].map((x) => x[1]);
+      const target = names.find((n) => !/^(the|a|this|our|my|out|it|everyone)$/i.test(n)) ?? "everyone";
+      const r = await call("send_weekly_summary", { to: target });
+      if (!r) return "Sorry, I couldn't send the summary. Does that person have an email address on file?";
+      return r.sent ? `Done. I've emailed this week's summary to ${list(r.to)}.` : "Okay, I didn't send it.";
+    },
+  },
+  {
+    match: /notes? from (?:the )?(?:doctor|clinic|care team)|what did (?:the )?(?:doctor|clinic)|any (?:new )?notes/i,
+    async run(_m, _who, call) {
+      const due = await call("whats_due", { horizon_hours: 4 });
+      const notes = due ? careTeam(due).trim() : "";
+      return notes || "No new notes from the care team.";
+    },
+  },
   {
     match: /did i take my pills|what('s| is) due|what do i need to take/i,
     async run(_m, _who, call) {
@@ -38,7 +59,7 @@ const LINES: Line[] = [
           : "You're all caught up, nothing is due right now.";
       const meds = [...overdue, ...now];
       if (meds.some((i: any) => /food/.test(i.instructions))) say += " Remember to take the metformin with food.";
-      return say;
+      return say + careTeam(due);
     },
   },
   {
@@ -145,7 +166,7 @@ export class PlaybackSimulator {
     if (!this.tools) this.tools = new Map((await this.mcp.listTools()).tools.map((t) => [t.name, t]));
     const text = utterance.replace(/^alexa,?\s*/i, "").trim();
     const call: Call = async (name, args) => {
-      const r = await runMcpTool(this.mcp, this.tools, name, args, emit);
+      const r = await runMcpTool(this.mcp, this.tools, name, args, emit, speaker);
       return r.isError ? undefined : ((r.result as CallToolResult | undefined)?.structuredContent as Record<string, any> | undefined);
     };
     for (const line of LINES) {

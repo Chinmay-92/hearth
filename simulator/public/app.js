@@ -15,6 +15,7 @@ async function connect() {
     state.id = j.id;
     $("conn").textContent = `connected · ${j.hearth}${j.mode === "playback" ? " · scripted playback (no LLM)" : ""}`;
     refreshAmbient();
+    listenForPushes();
   } catch (err) {
     $("conn").textContent = `Not connected: ${err.message}. Start the Hearth server (npm run dev:server) and reload.`;
   }
@@ -48,6 +49,41 @@ async function refreshAmbient() {
 }
 setInterval(refreshAmbient, 60_000);
 
+// ------------------------------------------------------------ pushes from Hearth
+
+// Hearth sends reminders, care-team notes and alerts on its own, as MCP logging
+// notifications. The idle screen shows them, and the light bar pulses yellow
+// the way an Echo does when a notification is waiting.
+const PUSH_KIND = {
+  "hearth.dose_reminder": (d) => [d.stage === 1 ? "Medication reminder" : "Missed dose · family told", d.spoken],
+  "hearth.care_team_note": (d) => [`Note from ${d.from}`, `${d.text} Ask “any notes from the doctor?” to hear it.`],
+  "hearth.alert": (d) => [`${d.urgency === "urgent" ? "Urgent alert" : "Message"} sent to ${d.to}`, d.message],
+  "hearth.weekly_summary": (d) => ["Weekly summary emailed", `${d.to.join(" and ")} · ${d.subject}`],
+};
+
+function listenForPushes() {
+  const es = new EventSource(`/api/events?id=${state.id}`);
+  es.onmessage = (m) => {
+    const e = JSON.parse(m.data);
+    if (e.type !== "push" || !PUSH_KIND[e.logger]) return;
+    const [kind, text] = PUSH_KIND[e.logger](e.data);
+    log("push-ev", `◆ notifications/message · ${e.logger}`, JSON.stringify(e.data, null, 2));
+    // Alerts are the lowest priority: the conversation already shows the ones the user
+    // triggered, and a care-team note's follow-up alert shouldn't cover the note itself.
+    if (e.logger === "hearth.alert" && (state.busy || !$("notice").hidden)) return;
+    $("noticeKind").textContent = kind;
+    $("noticeText").textContent = text;
+    $("notice").hidden = false;
+    device.dataset.notify = "1";
+    if (!state.busy && !$("ambient").hidden && e.logger === "hearth.dose_reminder" && e.data.stage === 1) speak(e.data.spoken);
+  };
+}
+
+function clearNotice() {
+  $("notice").hidden = true;
+  delete device.dataset.notify;
+}
+
 function showAmbient() {
   $("convo").hidden = true;
   $("ambient").hidden = false;
@@ -68,6 +104,7 @@ async function ask(text) {
   clearTimeout(idleTimer);
   speechSynthesis.cancel();
   const speaker = document.querySelector('input[name="speaker"]:checked').value;
+  clearNotice();
   $("ambient").hidden = true;
   $("convo").hidden = false;
   $("utterance").textContent = text;
@@ -327,6 +364,8 @@ const DEMO = [
   ["Sarah", "Mom's knee appointment needs a driver"],
   ["Sarah", "Book Mom's eye exam next Tuesday at 2, she'll need a ride"],
   ["Margaret", "Tell David thank you for the groceries"],
+  ["Margaret", "Any notes from the doctor?"],
+  ["Sarah", "Send David the weekly summary"],
 ];
 $("chips").innerHTML = DEMO.map(([who, t], i) => `<button type="button" data-i="${i}" title="as ${who}">${esc(t)}</button>`).join("");
 $("chips").onclick = (ev) => {
@@ -349,6 +388,13 @@ $("mic").onclick = () => {
   state.voice = true;
   if (recognizer) stopListening();
   else listen();
+};
+$("notice").onclick = clearNotice;
+$("clinic").onclick = async () => {
+  const r = await fetch("/api/demo/clinic-note", { method: "POST" });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) log("result err", "Clinic note not sent", j.error || `HTTP ${r.status}`);
+  else log("user", "POST /inbox/notes (clinic portal)", `Dr. Bennett's office → note #${j.id}`);
 };
 $("reset").onclick = async () => {
   if (state.id) await fetch("/api/reset", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: state.id }) });

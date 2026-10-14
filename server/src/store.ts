@@ -8,6 +8,8 @@ export type FamilyMember = {
   relation: string;
   /** ntfy.sh topic, webhook URL, or omitted for outbox-only delivery. */
   notify?: string;
+  /** Email address for the weekly summary (for family members without an Echo). */
+  email?: string;
 };
 
 export type Profile = {
@@ -15,6 +17,8 @@ export type Profile = {
   household: string;
   family: FamilyMember[];
   emergencyContact: string;
+  /** Optional channel for reminders to the care recipient herself (e.g. ntfy on her phone). */
+  recipientNotify?: string;
 };
 
 export type Medication = {
@@ -57,7 +61,16 @@ export type Notification = {
   delivery: string;
 };
 
-export type CareNote = { id: number; at: string; author: string; text: string };
+export type CareNote = {
+  id: number;
+  at: string;
+  author: string;
+  text: string;
+  /** "family" for notes said to Alexa, "care_team" for notes posted by a clinic to the inbox. */
+  source: "family" | "care_team";
+  /** Set once the care recipient has heard a care-team note read out. */
+  heardAt: string | null;
+};
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -78,7 +91,16 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY, at TEXT NOT NULL, to_whom TEXT NOT NULL, urgency TEXT NOT NULL,
   message TEXT NOT NULL, delivery TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS reminders (
+  med_id INTEGER NOT NULL, slot TEXT NOT NULL, stage INTEGER NOT NULL, at TEXT NOT NULL,
+  PRIMARY KEY (med_id, slot, stage));
 `;
+
+/** Columns added after the first release; applied to older databases on open. */
+const MIGRATIONS: [table: string, column: string, ddl: string][] = [
+  ["notes", "source", "ALTER TABLE notes ADD COLUMN source TEXT NOT NULL DEFAULT 'family'"],
+  ["notes", "heard_at", "ALTER TABLE notes ADD COLUMN heard_at TEXT"],
+];
 
 /** Local "YYYY-MM-DD" for a date. */
 export function dayKey(d: Date): string {
@@ -106,6 +128,10 @@ export class CareStore {
     this.db = new DatabaseSync(path);
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     this.db.exec(SCHEMA);
+    for (const [table, column, ddl] of MIGRATIONS) {
+      const cols = this.db.prepare(`PRAGMA table_info(${table})`).all() as Row[];
+      if (!cols.some((c) => c.name === column)) this.db.exec(ddl);
+    }
     this.now = now;
   }
 
@@ -259,15 +285,42 @@ export class CareStore {
     );
   }
 
-  addNote(author: string, text: string, at = this.now().toISOString()): CareNote {
-    const r = this.db.prepare("INSERT INTO notes (at, author, text) VALUES (?, ?, ?)").run(at, author, text);
-    return { id: Number(r.lastInsertRowid), at, author, text };
+  addNote(author: string, text: string, at = this.now().toISOString(), source: CareNote["source"] = "family"): CareNote {
+    const r = this.db.prepare("INSERT INTO notes (at, author, text, source) VALUES (?, ?, ?, ?)").run(at, author, text, source);
+    return { id: Number(r.lastInsertRowid), at, author, text, source, heardAt: null };
   }
 
   notes(since: Date): CareNote[] {
-    return (this.db.prepare("SELECT * FROM notes WHERE at >= ? ORDER BY at DESC").all(since.toISOString()) as Row[]).map(
-      (r) => ({ id: Number(r.id), at: String(r.at), author: String(r.author), text: String(r.text) }),
-    );
+    return (this.db.prepare("SELECT * FROM notes WHERE at >= ? ORDER BY at DESC").all(since.toISOString()) as Row[]).map(toNote);
+  }
+
+  /** Care-team notes the care recipient hasn't heard yet, oldest first. */
+  unheardCareTeamNotes(): CareNote[] {
+    return (this.db.prepare("SELECT * FROM notes WHERE source = 'care_team' AND heard_at IS NULL ORDER BY at").all() as Row[]).map(toNote);
+  }
+
+  markNotesHeard(ids: number[]) {
+    const stmt = this.db.prepare("UPDATE notes SET heard_at = ? WHERE id = ?");
+    for (const id of ids) stmt.run(this.now().toISOString(), id);
+  }
+
+  // ---- reminders -----------------------------------------------------------
+
+  /** Records that a reminder stage fired for a dose slot. Returns false if it had already fired. */
+  claimReminder(medId: number, slot: string, stage: number): boolean {
+    const r = this.db
+      .prepare("INSERT OR IGNORE INTO reminders (med_id, slot, stage, at) VALUES (?, ?, ?, ?)")
+      .run(medId, slot, stage, this.now().toISOString());
+    return Number(r.changes) > 0;
+  }
+
+  getKv(key: string): string | null {
+    const row = this.db.prepare("SELECT value FROM kv WHERE key = ?").get(key) as Row | undefined;
+    return row ? String(row.value) : null;
+  }
+
+  setKv(key: string, value: string) {
+    this.db.prepare("INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(key, value);
   }
 
   addAppointment(a: Omit<Appointment, "id">): Appointment {
@@ -320,4 +373,15 @@ export class CareStore {
       delivery: String(r.delivery),
     }));
   }
+}
+
+function toNote(r: Row): CareNote {
+  return {
+    id: Number(r.id),
+    at: String(r.at),
+    author: String(r.author),
+    text: String(r.text),
+    source: r.source === "care_team" ? "care_team" : "family",
+    heardAt: r.heard_at == null ? null : String(r.heard_at),
+  };
 }

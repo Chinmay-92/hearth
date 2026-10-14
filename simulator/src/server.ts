@@ -4,11 +4,14 @@
 //   POST /api/turn   {id, text, speaker}  -> text/event-stream of AgentEvents + elicitation prompts
 //   POST /api/elicit {id, requestId, action, content}
 //   GET  /api/ambient?id=        -> whats_due for the idle screen (direct MCP call, no LLM)
+//   GET  /api/events?id=         -> text/event-stream of things Hearth pushes on its own
+//                                   (reminders, care-team notes, alerts) via MCP logging notifications
+//   POST /api/demo/clinic-note   -> posts a sample note to Hearth's care-team inbox (needs HEARTH_INBOX_TOKEN)
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { CallToolResultSchema, ElicitRequestSchema, type ElicitResult } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolResultSchema, ElicitRequestSchema, type ElicitResult, LoggingMessageNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import express, { type Response } from "express";
 import { AlexaSimulator } from "./agent.ts";
 import { PlaybackSimulator } from "./playback.ts";
@@ -23,6 +26,7 @@ type Device = {
   sim: AlexaSimulator | PlaybackSimulator;
   stream: Response | null; // SSE stream of the turn in flight
   elicits: Map<string, (r: ElicitResult) => void>;
+  events: Set<Response>; // open /api/events streams for this device
 };
 const devices = new Map<string, Device>();
 
@@ -37,7 +41,14 @@ async function createDevice(): Promise<string> {
       },
     },
   );
-  const device: Device = { client, sim: PLAYBACK ? new PlaybackSimulator(client) : new AlexaSimulator(client), stream: null, elicits: new Map() };
+  const device: Device = { client, sim: PLAYBACK ? new PlaybackSimulator(client) : new AlexaSimulator(client), stream: null, elicits: new Map(), events: new Set() };
+
+  // Hearth pushes reminders, care-team notes and alerts as logging notifications on
+  // the session's standalone SSE stream; relay them to the screen.
+  client.setNotificationHandler(LoggingMessageNotificationSchema, (n) => {
+    if (!n.params.logger?.startsWith("hearth.")) return;
+    for (const res of device.events) sse(res, { type: "push", logger: n.params.logger, level: n.params.level, data: n.params.data });
+  });
 
   // Server-initiated elicitation: forward to the screen, wait for a tap or a spoken yes/no.
   client.setRequestHandler(ElicitRequestSchema, (req) => {
@@ -116,6 +127,27 @@ app.get("/api/ambient", async (req, res) => {
   } catch (err) {
     res.status(502).json({ error: String(err) });
   }
+});
+
+app.get("/api/events", (req, res) => {
+  const device = devices.get(String(req.query.id));
+  if (!device) return void res.status(404).json({ error: "unknown session" });
+  res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
+  res.write(": connected\n\n");
+  device.events.add(res);
+  req.on("close", () => device.events.delete(res));
+});
+
+// Demo helper: what a clinic portal or inbound-email webhook would send to Hearth.
+app.post("/api/demo/clinic-note", async (_req, res) => {
+  const token = process.env.HEARTH_INBOX_TOKEN;
+  if (!token) return void res.status(400).json({ error: "Set HEARTH_INBOX_TOKEN for both the Hearth server and the simulator." });
+  const r = await fetch(new URL("/inbox/notes", HEARTH_URL), {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ from: "Dr. Bennett's office", text: "Margaret's blood pressure looked good today. Keep the lisinopril at 10 mg, and please book a follow-up in three months." }),
+  }).catch((err) => ({ ok: false, status: 502, json: async () => ({ error: String(err) }) }));
+  res.status(r.ok ? 201 : r.status).json(await r.json());
 });
 
 app.listen(PORT, "127.0.0.1", () => {

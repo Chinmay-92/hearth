@@ -183,6 +183,19 @@
 </section>
 
 <!-- Under the hood -->
+<section class="ownclock" id="ownclock" aria-labelledby="ownclock-h">
+  <div class="wrap">
+    <h2 id="ownclock-h">It doesn't wait to be asked</h2>
+    <p class="section-sub">Hearth runs on its own clock and knows who it's talking to. Everything below is built and tested in the repo.</p>
+    <dl class="features">
+      <div><dt>Reminders when a dose is missed</dt><dd>30 minutes after a dose is due with nothing logged, Margaret's screen shows a gentle reminder and the light bar glows yellow. After 3 hours, Sarah is told. Each step happens once, and never overnight.</dd></div>
+      <div><dt>Notes from the doctor's office</dt><dd>A clinic portal or an inbound-email webhook posts to Hearth's care-team inbox. The family gets an alert, and the next time Margaret asks what's due, Alexa reads her the note word for word.</dd></div>
+      <div><dt>A weekly email for family without an Echo</dt><dd>Every Sunday evening, or when Sarah says “Send David the weekly summary”, David gets the digest by email: adherence, trends, what needs attention, and who's driving.</dd></div>
+      <div><dt>It knows who is speaking</dt><dd>When the Echo is linked, Hearth asks “Who uses this Alexa?” and carries the answer in the OAuth token. Messages are signed, doses say “logged by David”, and only Margaret hearing a doctor's note counts as heard.</dd></div>
+    </dl>
+  </div>
+</section>
+
 <section class="hood band" id="hood" aria-labelledby="hood-h">
   <div class="wrap">
     <h2 id="hood-h">Built on MCP 2025-11-25</h2>

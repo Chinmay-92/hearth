@@ -36,6 +36,7 @@ export class AlexaSimulator {
   private session: Session | null = null;
 
   private mcp: Client;
+  private speaker: string | undefined;
 
   constructor(mcp: Client) {
     this.mcp = mcp;
@@ -62,6 +63,7 @@ export class AlexaSimulator {
 
   async turn(utterance: string, speaker: string, emit: (e: AgentEvent) => void): Promise<void> {
     const s = await this.ensureSession();
+    this.speaker = speaker;
     const now = new Date().toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
     const turnStart = s.messages.length;
     s.messages.push({ role: "user", content: `[${now} · speaker: ${speaker}]\n${utterance}` });
@@ -105,7 +107,7 @@ export class AlexaSimulator {
   }
 
   private async runTool(tu: Anthropic.Beta.BetaToolUseBlock, emit: (e: AgentEvent) => void): Promise<Anthropic.Beta.BetaToolResultBlockParam> {
-    const { text, isError } = await runMcpTool(this.mcp, this.session?.mcpTools, tu.name, tu.input as Record<string, unknown>, emit);
+    const { text, isError } = await runMcpTool(this.mcp, this.session?.mcpTools, tu.name, tu.input as Record<string, unknown>, emit, this.speaker);
     return { type: "tool_result", tool_use_id: tu.id, content: text || "(no output)", is_error: isError };
   }
 }
@@ -113,17 +115,20 @@ export class AlexaSimulator {
 // Calls one Hearth tool over MCP and emits the trace events the screen shows.
 // If the tool declares an MCP App (`_meta.ui.resourceUri`), its HTML is fetched
 // and handed to the screen. Shared by the Claude agent and the scripted playback.
+// The speaker travels in _meta ("hearth/speaker"), the way a shared Echo would
+// identify a voice; a device linked to one person gets it from its OAuth token.
 export async function runMcpTool(
   mcp: Client,
   mcpTools: Map<string, McpTool> | undefined,
   name: string,
   args: Record<string, unknown>,
   emit: (e: AgentEvent) => void,
+  speaker?: string,
 ): Promise<{ text: string; isError: boolean; result?: CallToolResult }> {
   emit({ type: "tool_call", name, args });
   try {
     const result = await mcp.request(
-      { method: "tools/call", params: { name, arguments: args } },
+      { method: "tools/call", params: { name, arguments: args, ...(speaker ? { _meta: { "hearth/speaker": speaker } } : {}) } },
       CallToolResultSchema,
       { timeout: 300_000 }, // elicitation waits on a human
     );

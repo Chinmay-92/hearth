@@ -38,6 +38,7 @@ export function digestAppHtml(): string {
   .flags li { background: var(--warn-bg); border-left: 3px solid var(--ember); padding: 8px 10px; border-radius: 8px; }
   .ok { color: var(--sage); }
   svg { width: 100%; height: auto; display: block; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--sky); border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; margin-right: 4px; }
   .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
   .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
   .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
@@ -116,7 +117,7 @@ export function digestAppHtml(): string {
         '<div class="legend"><span><i style="background:var(--ember)"></i>Pain (0–10)</span><span><i style="background:var(--sky)"></i>Sleep (h)</span><span><i style="background:var(--sage)"></i>Mood (×2)</span><span><i style="background:var(--ember);height:8px;width:6px"></i>Missed doses</span></div></div>' +
       '<div class="grid2">' +
         '<div class="card"><h2>Coming up</h2>' + (d.upcomingAppointments.length ? d.upcomingAppointments.map((a) => '<div class="row"><span>' + esc(a.title) + '<br><span class="sub">' + fmtDay(a.at) + ' · ' + fmtTime(a.at) + '</span></span><span class="pill ' + (a.driver ? "" : "need") + '">' + (a.driver ? "🚗 " + esc(a.driver) : "Needs driver") + '</span></div>').join("") : '<div class="sub">No appointments in the next two weeks.</div>') + '</div>' +
-        '<div class="card"><h2>Family notes</h2>' + (d.recentNotes.length ? d.recentNotes.map((n) => '<div class="row"><span>' + esc(n.text) + '</span><span class="sub">' + esc(n.author) + '</span></div>').join("") : '<div class="sub">No notes yet.</div>') + '</div>' +
+        '<div class="card"><h2>Family notes</h2>' + (d.recentNotes.length ? d.recentNotes.map((n) => '<div class="row"><span>' + (n.source === "care_team" ? '<span class="tag">Care team</span> ' : '') + esc(n.text) + '</span><span class="sub">' + esc(n.author) + '</span></div>').join("") : '<div class="sub">No notes yet.</div>') + '</div>' +
       '</div>';
     requestAnimationFrame(() => post({ method: "ui/notifications/size-changed", params: { width: document.body.scrollWidth, height: document.body.scrollHeight } }));
   }

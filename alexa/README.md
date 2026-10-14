@@ -102,7 +102,7 @@ Hearth accepts whatever `https` redirect URI Alexa sends and binds the code to i
 ### 7. Link your household
 
 1. Ask the Echo Dot something that needs Hearth, for example *"Alexa, did I take my pills this morning?"*. Hearth answers `401`, so Alexa+ sends a linking prompt to the **Alexa app** on your phone. (The add-on detail page in the Alexa app also has a link button.)
-2. The Hearth page opens: *"Link Hearth to Alexa"*. Enter the **household PIN** from step 2.
+2. The Hearth page opens: *"Link Hearth to Alexa"*. Enter the **household PIN** from step 2, and under **Who uses this Alexa?** pick the person (Margaret for the Echo in her kitchen). Hearth then knows who is speaking on that device: messages are signed with that name, and care-team notes count as heard. Choose *Shared by everyone* for a device the whole family uses.
 3. Ask again. Alexa+ now calls Hearth with a user token.
 
 ### 8. Test on the Echo Dot

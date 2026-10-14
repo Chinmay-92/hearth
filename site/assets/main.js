@@ -57,7 +57,7 @@ const PROBE = [
   ["MUST", "Every tool has an inputSchema of type object"],
   ["MUST", "Tool names are unique"],
   ["SHOULD", "Every tool has a description"],
-  ["INFO", "Server exposes 8 tool(s)"],
+  ["INFO", "Server exposes 9 tool(s)"],
   ["MUST", "GET returns an SSE stream or 405"],
   ["SHOULD", "DELETE terminates the session"],
   ["MUST", "Requests on a terminated session return 404"],
@@ -102,6 +102,7 @@ function start() {
 
   heroLoop();
   ScrollTrigger.create({ trigger: ".term", start: "top 75%", once: true, onEnter: termPlay });
+  gsap.from(".ownclock .features > div", { autoAlpha: 0, y: 28, stagger: 0.12, duration: 0.7, ease: "power2.out", scrollTrigger: { trigger: ".ownclock .features", start: "top 80%", once: true } });
   archPackets();
 
   const mm = gsap.matchMedia();
