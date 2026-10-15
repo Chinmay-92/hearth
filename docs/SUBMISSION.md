@@ -4,7 +4,7 @@ Copy each section into the matching Devpost field. Before submitting, answer the
 
 ## Links
 
-- **Website:** ✏️ paste the Vercel URL once it's deployed
+- **Website:** https://hearth-site-six.vercel.app
 - **Demo video (YouTube or Vimeo, public, under 3:00):** ✏️ paste the URL
 - **Code repository:** https://github.com/Chinmay-92/hearth (public, MIT license shown in the About panel)
 - **Open-source contribution:** https://github.com/Chinmay-92/mcp-http-probe · [npm](https://www.npmjs.com/package/mcp-http-probe) · [GitHub Marketplace](https://github.com/marketplace/actions/mcp-http-probe)
