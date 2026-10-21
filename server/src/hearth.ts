@@ -74,11 +74,15 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
     return store.findFamily(name)?.name ?? null;
   }
 
-  /** Ask the human a structured question if the client supports form elicitation. */
-  async function ask(message: string, requestedSchema: Parameters<typeof server.server.elicitInput>[0] extends infer P
+  /**
+   * Ask the human a structured question if the client supports form elicitation.
+   * The request rides on the tool call's own SSE response stream (relatedRequestId),
+   * not the standalone GET stream, so it reaches the device that asked.
+   */
+  async function ask(extra: Extra, message: string, requestedSchema: Parameters<typeof server.server.elicitInput>[0] extends infer P
     ? P extends { requestedSchema: infer S } ? S : never : never): Promise<ElicitResult | null> {
     if (!server.server.getClientCapabilities()?.elicitation) return null;
-    return server.server.elicitInput({ mode: "form", message, requestedSchema });
+    return server.server.elicitInput({ mode: "form", message, requestedSchema }, { relatedRequestId: extra.requestId });
   }
 
   const sendAlert = (member: FamilyMember, urgency: Notification["urgency"], message: string, from: string) =>
@@ -182,6 +186,7 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
         // If the primary caregiver is the one reporting it, ask about the next person instead.
         const primary = profile.family.find((f) => f.name !== reporter) ?? profile.family[0];
         const answer = await ask(
+          extra,
           `From ${profile.recipient}'s check-in: ${concern.reasons.join("; ")}. Should I alert ${primary.name} right away?`,
           {
             type: "object",
@@ -251,7 +256,7 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
       }
       const names = recipients.map((r) => r.name).join(" and ");
       let finalMessage = message;
-      const answer = await ask(`Send this to ${names}? "${message}"`, {
+      const answer = await ask(extra, `Send this to ${names}? "${message}"`, {
         type: "object",
         properties: {
           send: { type: "boolean", title: `Send to ${names}`, default: true },
@@ -289,13 +294,13 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
       },
       annotations: { readOnlyHint: false, openWorldHint: true },
     },
-    async ({ title, when, with_whom, location, needs_ride, driver }): Promise<CallToolResult> => {
+    async ({ title, when, with_whom, location, needs_ride, driver }, extra): Promise<CallToolResult> => {
       const at = new Date(when);
       if (Number.isNaN(at.getTime())) return { isError: true, content: [text(`"${when}" is not a date I can read. Use ISO 8601, e.g. 2026-10-20T14:00.`)] };
       const profile = store.requireProfile();
       let chosen = driver ? store.findFamily(driver) : undefined;
       if (needs_ride && !chosen) {
-        const answer = await ask(`Who can drive ${profile.recipient} to "${title}" on ${speakDay(at.toISOString())} at ${speakTime(at.toISOString())}?`, {
+        const answer = await ask(extra, `Who can drive ${profile.recipient} to "${title}" on ${speakDay(at.toISOString())} at ${speakTime(at.toISOString())}?`, {
           type: "object",
           properties: {
             driver: { type: "string", title: "Driver", oneOf: [...profile.family.map((f) => ({ const: f.name, title: `${f.name} (${f.relation})` })), { const: "none", title: "Not sure yet" }] },
@@ -371,7 +376,7 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
       },
       annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: true },
     },
-    async ({ to, confirmed }): Promise<CallToolResult> => {
+    async ({ to, confirmed }, extra): Promise<CallToolResult> => {
       const profile = store.requireProfile();
       const who = to.replace(/^my\s+/i, "");
       const chosen = /^(everyone|all|family|the family)$/i.test(who) ? profile.family : [store.findFamily(who)].filter((x): x is FamilyMember => !!x);
@@ -381,7 +386,7 @@ export function createHearthServer(store: CareStore, hub: EventHub = new EventHu
         return { isError: true, content: [text(`${chosen.map((m) => m.name).join(" and ")} ${chosen.length > 1 ? "have" : "has"} no email address on file. Add one to the profile first.`)] };
       }
       const names = withEmail.map((m) => m.name).join(" and ");
-      const answer = await ask(`Email this week's summary of ${profile.recipient} to ${names}?`, {
+      const answer = await ask(extra, `Email this week's summary of ${profile.recipient} to ${names}?`, {
         type: "object",
         properties: { send: { type: "boolean", title: `Email ${names}`, default: true } },
         required: ["send"],

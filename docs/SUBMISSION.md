@@ -1,11 +1,11 @@
 # Devpost submission kit
 
-Copy each section into the matching Devpost field. Before submitting, answer the ✏️ prompts: one or two sentences each, from your own experience.
+Copy each section into the matching Devpost field.
 
 ## Links
 
 - **Website:** https://hearth-site-six.vercel.app
-- **Demo video (YouTube or Vimeo, public, under 3:00):** ✏️ paste the URL
+- **Demo video (YouTube or Vimeo, public, under 3:00):** https://www.youtube.com/watch?v=Z35pSKCaUfc
 - **Code repository:** https://github.com/Chinmay-92/hearth (public, MIT license shown in the About panel)
 - **Open-source contribution:** https://github.com/Chinmay-92/mcp-http-probe · [npm](https://www.npmjs.com/package/mcp-http-probe) · [GitHub Marketplace](https://github.com/marketplace/actions/mcp-http-probe)
 
@@ -50,7 +50,6 @@ The repo also includes a **simulated Alexa+ Echo Show**: voice in and out, an am
 
 ## Challenges
 
-✏️ Keep the ones that were hard for you and add one in your own words, e.g. the first time the Echo Dot reached Hearth through the tunnel. Candidates from the build:
 - Getting elicitation to reach the right device meant one `McpServer` per session over a shared store, instead of one global server.
 - The MCP Apps spec examples name the handshake both `initialize` and `ui/initialize`. We implemented `ui/initialize` per the lifecycle section.
 - Out of the box, the SDK's Streamable HTTP transport does not validate `Origin`, which the spec requires. We added a guard and then built a probe to catch this in any server.
@@ -83,7 +82,6 @@ HEARTH_INBOX_TOKEN=demo HEARTH_PLAYBACK=1 npm run dev:sim     # simulator on htt
 **Which tools, APIs and SDKs did you use, and for what?**
 - *MCP spec 2025-11-25 and `@modelcontextprotocol/sdk` (TypeScript) 1.32.1*: the server and the simulator's client.
 - *MCP Apps extension (`io.modelcontextprotocol/ui`)*: the family digest card.
-- *MCP Inspector*: ✏️ keep this line only if you used it, otherwise delete it.
 - *Anthropic Claude API*: the agent loop in the simulated Alexa+ experience.
 - *Alexa+ MCP Toolkit and Alexa AI CLI (`@alexa-ai/cli`)*: deploying Hearth as an Alexa+ add-on with account linking, tested on an Echo Dot.
 - *ntfy.sh*: push notifications to family phones.
@@ -101,13 +99,13 @@ HEARTH_INBOX_TOKEN=demo HEARTH_PLAYBACK=1 npm run dev:sim     # simulator on htt
 - **Alexa+ MCP Toolkit docs vs. the MCP spec:** the toolkit requires a 401 *without* `WWW-Authenticate`, but MCP 2025-11-25 authorization says servers MUST send it for discovery. A server that serves both Alexa+ and spec-following clients has to choose. A documented flag, or Alexa simply ignoring the header, would avoid that.
 - **Toolkit docs inconsistencies we hit:** the client-lifecycle example shows Alexa+ initializing with protocol `2025-03-26`, while the hackathon asks for `2025-11-25`. The token endpoint is described as accepting credentials in "the authorization header or POST body" but the table says HTTP Basic only. The runtime flow says `mcp:resource` where everything else says `mcp:resources`. The PRM path is just "the well-known URI".
 - **Missing capability matrix:** there's no list of which MCP client features Alexa+ declares (elicitation, MCP Apps on screenless devices, logging) or the per-call timeout. We designed fallbacks for each: a `confirmed` flag, `assign_driver`, and voice-first text.
-- **Setup friction:** installing the Alexa AI CLI requires AWS profiles, Git for CodeCommit and a CodeArtifact npm registry whose token expires every 12 hours. A public npm package would remove most of the onboarding time. ✏️ In one sentence: how long did it take from `npm install -g @alexa-ai/cli` to your first successful `alexa-ai deploy`, and what slowed you down most?
+- **Setup friction:** installing the Alexa AI CLI requires AWS profiles, Git for CodeCommit and a CodeArtifact npm registry whose token expires every 12 hours. A public npm package would remove most of the onboarding time.
 
 **How was onboarding (zero to hello world)?**
-Fast for MCP: an SDK server over Streamable HTTP was answering `tools/list` in under 15 minutes. Slower for Alexa+: the CLI install needs AWS, CodeCommit and CodeArtifact set up first (see friction log entry 5). ✏️ One sentence: how long until the Echo Dot first answered from Hearth, and was account linking smooth?
+Fast for MCP: an SDK server over Streamable HTTP was answering `tools/list` in under 15 minutes. Slower for Alexa+: the CLI install needs AWS, CodeCommit and CodeArtifact set up first (see friction log entry 5).
 
 **Would you build with these again?**
-Yes. MCP and elicitation let a single server serve a voice-only grandparent and a screen-first adult child, with the right interaction for each. ✏️ Optional: add one personal reason, such as a family member you'd actually set this up for.
+Yes. MCP and elicitation let a single server serve a voice-only grandparent and a screen-first adult child, with the right interaction for each.
 
 **AWS services:** not used.
 

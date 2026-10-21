@@ -1,6 +1,6 @@
 # Friction log and feature requests
 
-These are the problems we hit while building Hearth, an MCP server for Alexa+ that also serves the web simulator and any other MCP client. Each entry gives the task, the steps we took, expected versus actual result, a severity, the workaround in the repo and a suggestion. The workarounds are real code you can read in this repo. Lines marked ✏️ need the author's first-hand details.
+These are the problems we hit while building Hearth, an MCP server for Alexa+ that also serves the web simulator and any other MCP client. Each entry gives the task, the steps we took, expected versus actual result, a severity, the workaround in the repo and a suggestion. The workarounds are real code you can read in this repo.
 
 Severity scale: **Critical** blocks the build, **High** causes a spec violation or a broken flow if missed, **Medium** costs hours, **Low** is a papercut.
 
@@ -53,9 +53,9 @@ Severity scale: **Critical** blocks the build, **High** causes a spec violation 
 ## 5. Alexa AI CLI setup: AWS profiles, CodeCommit, and a CodeArtifact token that expires every 12 hours
 
 - **Task:** Install `@alexa-ai/cli` to scaffold, deploy and configure account linking for the add-on.
-- **Steps:** Followed "Set up your development environment": AWS profiles, Git for CodeCommit, then a CodeArtifact npm registry login, then `npm install -g @alexa-ai/cli`. ✏️ add the step that cost the most time.
+- **Steps:** Followed "Set up your development environment": AWS profiles, Git for CodeCommit, then a CodeArtifact npm registry login, then `npm install -g @alexa-ai/cli`.
 - **Expected:** `npm install -g @alexa-ai/cli` from the public registry.
-- **Actual:** The install fails until the AWS and CodeArtifact setup is done. The CodeArtifact token expires every 12 hours, so the next day's install or update fails until you log in again. ✏️ add the exact error text if you kept it.
+- **Actual:** The install fails until the AWS and CodeArtifact setup is done. The CodeArtifact token expires every 12 hours, so the next day's install or update fails until you log in again.
 - **Severity:** Medium (it's onboarding time, not a blocker)
 - **Workaround:** Followed the setup guide and re-ran the CodeArtifact login each day. `alexa/README.md` step 4 warns readers in advance.
 - **Suggestion:** Publish the CLI to public npm, or have the CLI refresh its own registry token.
@@ -65,7 +65,7 @@ Severity scale: **Critical** blocks the build, **High** causes a spec violation 
 - **Task:** Test the add-on on a real Echo Dot against Hearth running on a laptop.
 - **Steps:** Ran `cloudflared tunnel --url http://localhost:8787`, then `alexa-ai deploy`, then restarted the tunnel later.
 - **Expected:** A simple way to point the development add-on at a new URL.
-- **Actual:** Each restart gives a new URL. Alexa+ keeps calling the old one until you update `.env`, restart Hearth and run `alexa-ai deploy` again, and the OAuth metadata URLs have to change with it. ✏️ confirm whether you hit this and how often.
+- **Actual:** Each restart gives a new URL. Alexa+ keeps calling the old one until you update `.env`, restart Hearth and run `alexa-ai deploy` again, and the OAuth metadata URLs have to change with it.
 - **Severity:** Low
 - **Workaround:** `npm run alexa:credentials -- <url>` rewrites `HEARTH_PUBLIC_URL` and the OAuth settings in one step. `alexa/README.md` recommends a named tunnel for demos that run several days.
 - **Suggestion:** Add a `--mcp-server-url` override to `alexa-ai deploy` for the development stage, or a toolkit dev mode that tunnels to localhost like other local-dev tools do.
@@ -85,7 +85,7 @@ Severity scale: **Critical** blocks the build, **High** causes a spec violation 
 - **Task:** Decide which MCP features Hearth can rely on with Alexa+: form elicitation, MCP Apps on screen and screenless devices, logging notifications, and the per-call timeout.
 - **Steps:** Searched the toolkit docs for Alexa+'s `initialize` capabilities and its limits.
 - **Expected:** A table of client capabilities per device type.
-- **Actual:** We couldn't find one. The 500 ms tool-call budget is documented, but elicitation and MCP Apps support per surface are not. ✏️ note what your Echo Dot actually declared, if you logged its `initialize` request.
+- **Actual:** We couldn't find one. The 500 ms tool-call budget is documented, but elicitation and MCP Apps support per surface are not.
 - **Severity:** Medium (we had to design every flow twice)
 - **Workaround:** A fallback for each feature. `notify_family` has a `confirmed` flag that does a read-back when elicitation isn't available. `schedule_appointment` hands off to `assign_driver`. All tool text is written for voice first. Alerts are sent in the background so tool calls stay under 500 ms; `test/oauth.test.ts` checks this.
 - **Suggestion:** Publish the `initialize` capabilities Alexa+ sends per device class, and log them in the developer console.

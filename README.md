@@ -9,7 +9,7 @@ If Mom says *"I tripped on the rug and I'm dizzy"*, Hearth doesn't just log it. 
 > Track: **Alexa+** (self-hosted MCP server, spec **2025-11-25**, **Streamable HTTP**), running on a **real Echo Dot** through the Alexa+ MCP Toolkit, with a web simulator as a fallback
 > Mini-challenge: **Open Source**, with [`mcp-http-probe`](https://github.com/Chinmay-92/mcp-http-probe), a conformance checker for Streamable HTTP MCP servers (on [npm](https://www.npmjs.com/package/mcp-http-probe) and the [GitHub Marketplace](https://github.com/marketplace/actions/mcp-http-probe))
 
-**Website:** https://hearth-site-six.vercel.app · **Demo video (under 3 min):** ✏️ `<YouTube URL>`
+**Website:** https://hearth-site-six.vercel.app · **Demo video (under 3 min):** https://www.youtube.com/watch?v=Z35pSKCaUfc
 
 ---
 
